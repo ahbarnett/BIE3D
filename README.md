@@ -25,10 +25,10 @@ Codes have not been tested on MATLAB versions prior to R2012a.
 ### Directories
 
 `kernels`  : Laplace evaluation, including on-surface (self-eval)  
-`surfaces' : smooth surface generators  
+`surfaces` : smooth surface generators  
 `singquad` : special surface quadratures for weakly singular kernels  
 `utils`    : general numerical and plot utilities  
 `test`     : test codes (other than built-in self-tests)  
-`timedomainwaveeqn` : TDBIE for wave equation  
+`timedomainwaveeqn` : TDBIE for wave equation  (not yet)
 `solvers` : 2D BVP solver example codes, also serve to test kernels  
 `doublyperiodic` : codes for doubly-periodic geometries  

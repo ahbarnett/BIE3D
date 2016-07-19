@@ -27,6 +27,9 @@ function [pan N] = create_panels(shape,so,o)
 %        spfac - (scalar) size factor converting to speed in chart coords.
 %        nei - indices in panel list of (usually 8) neighbor panels, in a
 %              standard ordering (must match that in set_auxinterp).
+%  In addition pan{1} contains the following fields needed to specify geometry:
+%        mp, np - numbers of vertical and horizontal panels.
+%        topo - topology, eg 'torus'
 
 % Barnett 7/11/15. restarted 7/14/16, swapped np & mp 7/18/16
 
@@ -38,6 +41,7 @@ function [pan N] = create_panels(shape,so,o)
 %  r, r_u, r_v, n, etc ?
 
 if nargin==0, test_create_panels; return; end
+if nargin<3, o=[]; end
 if isfield(o,'p'), p = o.p; else p = 8; end  % # nodes per side of panel (order)
 
 if strcmp(shape,'torus') 
@@ -56,6 +60,7 @@ if strcmp(shape,'torus')
       nei = nei(nei~=k);    % remove self from list, to leave 8
       pan{k}.nei = nei(:);
     end,end
+    pan{1}.mp=mp; pan{1}.np=np; pan{1}.topo = 'torus'; pan{1}.p = p;
 end
 pan = panel_smooth_quad(pan,p);  % does all panels
 %%%
@@ -76,9 +81,10 @@ function test_create_panels  % self-test
 type = 'torus', so.a = 1; so.b = 0.5; o = [];
 [pan N] = create_panels(type,so,o);
 
-figure; p = horzcat(pan{:}); x = horzcat(p.x);
+% plot it...
+figure; x = getallnodes(pan);
 plot3(x(1,:),x(2,:),x(3,:),'.','markersize',1); axis equal vis3d
-k = 57; % random panel (facing viewer for np=8, mp=12)
+k = 57;    % random panel (conveniently faces viewer for np=8, mp=12)
 hold on; for i=1:8, knei=pan{k}.nei(i);
   x = pan{knei}.x; plot3(x(1,:),x(2,:),x(3,:),'g.','markersize',5);
   l = mean(x,2); text(l(1),l(2),l(3),sprintf('%d(%d)',knei,i+1),'fontsize',20)
@@ -94,7 +100,7 @@ pan{k}   % look inside struct
 disp('surface area test:')
 np = 3; so.np = np; so.mp = ceil(1.5*np); 
 [pan N] = create_panels(type,so,o);
-p = horzcat(pan{:}); w = horzcat(p.w);  % get all weights
+[~,~,w] = getallnodes(pan);    % get all weights
 fprintf('np=%d: area err = %.3g\n',np,sum(w) - 2*pi^2)
 
 disp('Gauss law flux test:')
@@ -102,7 +108,7 @@ zo = [0.9; -0.2; 0.1];    % src pt, must be inside the shape
 plot3(zo(1),zo(2),zo(3),'k.','markersize',20);
 for mp = 4:2:12, so.mp = mp; so.np = ceil(1.5*mp); 
   [pan N] = create_panels(type,so,o);
-  p = horzcat(pan{:}); w = horzcat(p.w); x = horzcat(p.x); nx = horzcat(p.nx);
+  [x,nx,w] = getallnodes(pan);
   d = bsxfun(@minus,x,zo); r = sqrt(sum(d.^2,1));
   ddotn = sum(d.*nx,1);
   fprintf('mp=%d (N=%d): flux err = %.3g\n',mp,N,sum(w.*ddotn./r.^3)/(4*pi) - 1.0)

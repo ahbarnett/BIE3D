@@ -29,7 +29,7 @@ if nargin<4, paninfo = []; end
 
 if numel(tpan)==1, tpan = {tpan}; end  % ensure cell arrays
 if numel(span)==1, span = {span}; end
-tp = horzcat(tpan{:}); M = sum(horzcat(tp.N));  % # targets
+M = size(getallnodes(tpan),2);          % # targets
 Np = numel(span);      % # src pans
 n = span{1}.N;        % # nodes per src pan (assume same)
 u = nan(M,1);
@@ -38,14 +38,12 @@ for p = 1:numel(tpan), t = tpan{p}; % for each targ panel...
   tinds = indoff+(1:t.N);         % indices in output list
   spanselfk = find(samepanel(t,span));     % any self src pans? O(N), yuk
   if isempty(spanselfk)         % no self (use smooth for all src panels)
-    p = horzcat(span{:});       % make struct array (slow copying crap?)
-    w = horzcat(p.w); y = horzcat(p.x); ny = horzcat(p.nx);
+    [y ny w] = getallnodes(span);
     u(tinds) = LapSLPeval(t.x,y,w,dens);          % note ny absent!
   else                          % one src panel is self (same as targ)
     ss = span{spanselfk};       % the self src pan
     far = true(Np,1); far(ss.nei) = false; far(spanselfk) = false;
-    p = horzcat(span{far});     % slow?
-    w = horzcat(p.w); y = horzcat(p.x); ny = horzcat(p.nx);
+    [y ny w] = getallnodes({span{far}});    % note makes back a cell array
     farinds = logical(kron(far, ones(n,1)));  % assumes same n (nodes) for all src pans
     u(tinds) = LapSLPeval(t.x,y,w,dens(farinds));
     neardens = dens(~farinds);
@@ -82,7 +80,7 @@ function test_LapSeval_panels    % tests just on-surface convergence of SLP
 % ... not correctness of the formula; for that see test_LapGRF.m
 so.a=1; so.b = 0.5; [s N] = create_panels('torus',so,[]);  % use default # pans
 % non-const tau auxquad convergence (tests auxquad interp is good):
-p = horzcat(s{:}); x = horzcat(p.x); nx = horzcat(p.nx);  % all nodes coords
+x = getallnodes(s);
 dens = sin(1 + x(1,:) + 1.7*x(2,:) - 0.4*x(3,:))';  % smooth surf func, col vec
 k = 57;       % which pan to test on-surf u vals
 nrs = [4 6 8 10];

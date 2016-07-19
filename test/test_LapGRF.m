@@ -9,8 +9,10 @@ fprintf('did we get analytic grad f right? yes: %.3g\n',checkgrad(f,gradf))
 
 % surface...
 so.a=1; so.b = 0.5; [s N] = create_panels('torus',so,[]); % default # pans
-p = horzcat(s{:}); x = horzcat(p.x); nx = horzcat(p.nx);  % all nodes coords
+[x nx] = getallnodes(s);
 sigma = sum(nx.*gradf(x),1)'; tau = -f(x)';     % densities for GRF (col vecs)
+showsurffunc(s,sigma); title('GRF: sigma');
+showsurffunc(s,tau); title('GRF: tau');
 
 % interior GRF test...
 t.x = [0.9;-0.2;0.1]; t.N = 1;   % far targ pt (a fake panel), must be inside
