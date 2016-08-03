@@ -2,7 +2,7 @@ MODULE dspline
 
 IMPLICIT NONE
 
-! Use predictor-corrector schemes 
+! Use predictor-corrector schemes based on difference splines 
 
 CONTAINS
 
@@ -210,6 +210,171 @@ CONTAINS
   END DO 
 !
   END SUBROUTINE Extrap  
+
+  SUBROUTINE InterpMat(r,tinterp,dt,m,jmax,jmin,umat,upmat)
+!
+  INTEGER, INTENT(IN) :: m,r
+  DOUBLE PRECISION, DIMENSION(r), INTENT(IN) :: tinterp
+  DOUBLE PRECISION, INTENT(IN) :: dt 
+  INTEGER, INTENT(OUT) :: jmax,jmin 
+  DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, INTENT(OUT) :: umat,upmat 
+!
+! r       - number of interpolation times 
+! tinterp - desired times assumed negative with the current time =0 
+! dt      - time step
+! m       - degree 2m+1 spline   
+! jmax    - maximum time index for interpolation data - <= 0 with current time 0 
+! jmin    - minimum time index for interpolation data - <= 0 with current time 0
+! umat    - matrix of dimension r X (jmax-jmin+1) for u interpolation
+! upmat   - matrix of dimension r X (jmax-jmin+1) for du/dt interpolation
+!
+  INTEGER :: jt,mh,j,k,jf,nr,kp,nc
+  DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, SAVE :: u_to_cof
+  DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE, SAVE :: uf_to_cof
+  INTEGER, SAVE :: oldm=0 
+  DOUBLE PRECISION, DIMENSION(0:2*m+1) :: c
+  DOUBLE PRECISION, DIMENSION(0:m+1) :: x,y
+  DOUBLE PRECISION, DIMENSION(0:m) :: xf,yf
+  INTEGER, DIMENSION(r) :: jtmax,jtmin 
+  DOUBLE PRECISION :: tl,tr,s  
+  LOGICAL, SAVE :: first_call=.TRUE.
+!
+  mh=m/2
+!
+  IF (first_call) THEN 
+!
+    ALLOCATE(u_to_cof(0:2*m+1,m+2)) 
+    DO k=0,m+1
+      x(k)=dt*DBLE(k-mh) 
+    END DO 
+    tl=x(mh)
+    tr=x(mh+1)
+    DO k=0,m+1
+      y=0.d0
+      y(k)=1.d0
+      CALL point_to_dspline(x,y,c,tl,tr,m,m+1)
+      DO j=0,2*m+1
+        u_to_cof(j,k+1)=c(j)
+      END DO 
+    END DO
+!
+    ALLOCATE(uf_to_cof(mh,0:2*m+1,m+1))
+    DO k=0,m
+      xf(k)=dt*DBLE(k-m) 
+    END DO 
+    DO jf=1,mh
+      tr=dt*DBLE(jf-mh)
+      tl=tr-dt 
+      DO k=0,m
+        yf=0.d0
+        yf(k)=1.d0
+        CALL point_to_dspline(xf,yf,c,tl,tr,m,m)
+        DO j=0,2*m+1
+          uf_to_cof(jf,j,k+1)=c(j)
+        END DO 
+      END DO
+    END DO
+!
+    first_call=.FALSE.
+    oldm=m
+!
+  ELSE IF (oldm /= m) THEN
+!
+    DEALLOCATE(u_to_cof,uf_to_cof)
+!
+    ALLOCATE(u_to_cof(0:2*m+1,m+2)) 
+    mh=m/2
+    DO k=0,m+1
+      x(k)=dt*DBLE(k-mh) 
+    END DO 
+    tl=x(mh)
+    tr=x(mh+1)
+    DO k=0,m+1
+      y=0.d0
+      y(k)=1.d0
+      CALL point_to_dspline(x,y,c,tl,tr,m,m+1)
+      DO j=0,2*m+1
+        u_to_cof(j,k+1)=c(j)
+      END DO 
+    END DO
+!
+    ALLOCATE(uf_to_cof(mh,0:2*m+1,m+1))
+    DO k=0,m
+      xf(k)=dt*DBLE(k-m) 
+    END DO 
+    DO jf=1,mh
+      tr=dt*DBLE(jf-mh)
+      tl=tr-dt 
+      DO k=0,m
+        yf=0.d0
+        yf(k)=1.d0
+        CALL point_to_dspline(xf,yf,c,tl,tr,m,m)
+        DO j=0,2*m+1
+          uf_to_cof(jf,j,k+1)=c(j)
+        END DO 
+      END DO
+    END DO
+!
+    oldm=m
+!
+  END IF
+!
+  
+  DO jt=1,r 
+!
+! Where is t?
+!
+    nr=INT(tinterp(jt)/dt)
+    jtmax(jt)=MIN(0,nr+mh)
+    jtmin(jt)=MIN(-m,nr-1-mh)
+    IF (jt==1) THEN
+      jmax=jtmax(1)
+      jmin=jtmin(1)
+    END IF
+    IF (jtmax(jt) > jmax) THEN
+      jmax=jtmax(jt)
+    END IF
+    IF (jtmin(jt) < jmin) THEN
+      jmin=jtmin(jt)
+    END IF 
+!
+  END DO 
+!
+  nc=jmax-jmin+1
+  ALLOCATE(umat(r,nc),upmat(r,nc))
+  umat=0.d0
+  upmat=0.d0 
+!
+  DO jt=1,r
+    s=tinterp(jt)-dt*(DBLE(INT(tinterp(jt)/dt))-.5d0)
+    IF ((jtmax(jt)-jtmin(jt))==(m+1)) THEN
+      DO k=1,m+2
+        kp=jtmin(jt)-jmin+k
+        umat(jt,kp)=u_to_cof(2*m+1,k)
+        upmat(jt,kp)=DBLE(2*m+1)*u_to_cof(2*m+1,k)
+        DO j=2*m,1,-1 
+          umat(jt,kp)=s*umat(jt,kp)+u_to_cof(j,k)
+          upmat(jt,kp)=s*upmat(jt,kp)+DBLE(j)*u_to_cof(j,k)
+        END DO
+        umat(jt,kp)=s*umat(jt,kp)+u_to_cof(0,k)
+      END DO
+    ELSE
+      jf=INT(tinterp(jt)/dt)+mh 
+      DO k=1,m+1
+        kp=jtmin(jt)-jmin+k
+        umat(jt,kp)=uf_to_cof(jf,2*m+1,k)
+        upmat(jt,kp)=DBLE(2*m+1)*uf_to_cof(jf,2*m+1,k)
+        DO j=2*m,1,-1 
+          umat(jt,kp)=s*umat(jt,kp)+uf_to_cof(jf,j,k)
+          upmat(jt,kp)=s*upmat(jt,kp)+DBLE(j)*uf_to_cof(jf,j,k)
+        END DO
+        umat(jt,kp)=s*umat(jt,kp)+uf_to_cof(jf,0,k)
+      END DO
+    END IF
+!
+  END DO
+!
+  END SUBROUTINE InterpMat  
 
 END MODULE dspline 
  

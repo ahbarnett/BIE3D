@@ -28,3 +28,10 @@ fprintf('setup interp... '); Linfo = setup_auxinterp(s{1}.t,o);
 u = LapSeval_panels(t,s,sigma,Linfo) + LapDeval_panels(t,s,tau,Linfo);
 fprintf('max on-surf GRF err on panel k = %.3g\n',max(abs(u - f(t.x)'/2)))
 % about 1e-9
+
+% whole-surface GRF...
+tic
+u = LapSeval_panels(s,s,sigma,Linfo) + LapDeval_panels(s,s,tau,Linfo);
+toc
+fprintf('max on-surf GRF err = %.3g\n',max(abs(u - f(x)'/2)))
+% about 4sec, 4e-8
