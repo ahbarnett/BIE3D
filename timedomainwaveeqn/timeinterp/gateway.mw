@@ -1,0 +1,14 @@
+
+*** blah
+
+!
+! r       - number of interpolation times 
+! tinterp - desired times assumed negative with the current time =0 
+! dt      - time step
+! m       - degree 2m+1 spline   
+! jmax    - maximum time index for interpolation data - <= 0 with current time 0
+ 
+! jmin    - minimum time index for interpolation data - <= 0 with current time 0
+! umat    - matrix of dimension r X (jmax-jmin+1) for u interpolation
+! upmat   - matrix of dimension r X (jmax-jmin+1) for du/dt interpolation
+!
