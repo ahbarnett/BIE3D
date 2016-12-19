@@ -9,5 +9,6 @@ addpath([mfilepath, '/test']);
 addpath([mfilepath, '/singquad']);
 addpath([mfilepath, '/surfaces']);
 addpath([mfilepath, '/timedomainwaveeqn']);
+addpath([mfilepath, '/timedomainwaveeqn/quad']);
 addpath([mfilepath, '/timedomainwaveeqn/timeinterp']);
 addpath([mfilepath, '/doublyperiodic']);

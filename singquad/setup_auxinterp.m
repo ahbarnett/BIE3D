@@ -7,8 +7,8 @@ function I = setup_auxinterp(tt,o)
 % Assumes tt is tensor product nodes in param space.
 %
 % Inputs:
-%   tt - (2-by-p^2) list of param coords for target pts, assumed same for all
-%        3x3 panels.
+%   tt - (2-by-p^2) list of param coords for the target pts. The targets are
+%        assumed same for each of the panels in the 3x3 block.
 %   o - opts to pass to panel_sing_auxquad
 %
 % Source panel ordering  2 5 7      since the self comes first, then neighbors

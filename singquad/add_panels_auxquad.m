@@ -2,16 +2,17 @@ function pan = add_panels_auxquad(pan, o)
 % pan = add_panels_auxquad(pan, o) adds auxiliary quadr nodes for each target
 %  in each of a set of panels.
 %
-% pan = cell array of panels.
-% o = opts struct to panel_sing_auxquad
+% Inputs:
+%   pan = cell array of panels.
+%   o = opts struct to panel_sing_auxquad
 %
-% Adds fields to each panel pan{k}:
-%   naux - number of aux nodes
-%   auxnodes (3 by naux by ntarg) - nodes in R3
+% Adds fields to each panel pan{k} in the output struct:
+%   naux - number of aux nodes per target pt
+%   auxnodes (3 by naux by ntarg) - nodes in R3, for each target
 %   auxnormals (3 by naux by ntarg) - node normals in R3
 %   auxwei (naux by targ) - weights
 %
-% Notes: uses ~1000N storage
+% Notes: uses ~1000N storage, where N is the number of plain nodes.
 
 % Barnett 7/15/16
 if nargin==0, test_add_panels_auxquad; return; end

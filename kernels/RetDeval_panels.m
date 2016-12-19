@@ -60,7 +60,7 @@ for p = 1:numel(tpan), t = tpan{p}; % for each targ panel...
 end
 
 function u = RetDLPeval(x,y,ny,w,dens)
-% Dumb dense Retarded DLP extra term evaluator from sources tau_t
+% Dumb dense Retarded DLP extra term evaluator from sources density tau_t
 % w/ given weights, to targets
 % Inputs:
 % x targ (3-by-M), y src, ny src normals (both 3-by-N), w src weights (1-by-N)
