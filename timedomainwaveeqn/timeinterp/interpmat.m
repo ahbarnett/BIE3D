@@ -1,4 +1,4 @@
-@function [jmax jmin umat upmat] = interpmat(tinterp,dt,m)
+function [jmax jmin umat upmat] = interpmat(tinterp,dt,m)
 % INTERPMAT  return vectors of coeffs which interp from reg t grid to target t's
 %
 % [jmax jmin umat upmat] = interpmat(tinterp,dt,m)
@@ -27,7 +27,8 @@ maxinds = 5*m + ceil((max(tinterp)-min(tinterp))/dt);
 umat = zeros(r,maxinds); upmat = umat;     % allocate outputs for fortran
 
 % note this is to a simpler non-dynamically allocated umat,upmat version...
-#FORTRAN interpmatnoalloc(int r, double[] tinterp, double dt, int m, output int[1] jmax, output int[1] jmin, inout double[] umat, inout double[] upmat, int maxinds);
+mex_id_ = 'interpmatnoalloc(i int, i double[], i double, i int, o int[x], o int[x], io double[], io double[], i int)';
+[jmax, jmin, umat, upmat] = gateway(mex_id_, r, tinterp, dt, m, umat, upmat, maxinds, 1, 1);
 
 nc = jmax-jmin+1;     % desired number of output grid pts
 umat = umat(:,1:nc);  % resize to correct size...

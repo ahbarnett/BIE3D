@@ -18,10 +18,10 @@ side = 0;  % -1,0,1: choose nature of GRF test pt (a fake 1-pt panel)
 if side==1, t.x = [1.3;0.1;0.8];          % exterior...
 elseif side==-1, t.x = [-.8;.1;.2];       % or interior
 else, k=57;j=1; t.x = s{k}.x(:,j); end    % or on-surf
-t.N = 1; t.t = 2.1;                       % test target time
+t.N = 1; ttarg = 2.1;              % test target time (avoid s.t conflict)
 [x nx] = getallnodes(s);
 r = sqrt(sum(bsxfun(@minus,t.x,x).^2,1));   % dists from test pt to surf pts
-tret = t.t - r;   % retarded times on surf rel to GRF test pt
+tret = ttarg - r;   % retarded times on surf rel to GRF test pt
 
 if side~=0          % ------------------- off-surf 
   % now eval retarded sig, tau, tau'...
@@ -31,7 +31,7 @@ if side~=0          % ------------------- off-surf
 
   % do u(x,t) = S.sigma + (wave eqn D).tau :
   u = LapSeval_panels(t,s,retsig) + LapDeval_panels(t,s,rettau) + RetDeval_panels(t,s,rettaut)
-  uex = data_ptsrc(xs,T,Tt,t.t,t.x) * (side==1)           % zero inside, f out
+  uex = data_ptsrc(xs,T,Tt,ttarg,t.x) * (side==1)         % zero inside, f out
   fprintf('N=%d, off-surf GRF test at 1 pt: u err = %.3g\n', N, u-uex)
   % error 1e-8
 
@@ -42,7 +42,7 @@ else               % ------------- on-surf GRF w/ local aux nodes, pan k, pt j
   sf = s; sf(kill) = [];    % far pans - need fix internal inds in sf ???
   [x nx] = getallnodes(sf);
   r = sqrt(sum(bsxfun(@minus,t.x,x).^2,1));   % dists from test pt to surf pts
-  tret = t.t - r;   % retarded times on surf rel to GRF test pt
+  tret = ttarg - r;   % retarded times on surf rel to GRF test pt
   [f,fn,ft] = data_ptsrc(xs,T,Tt,tret,x,nx);      % far
   retsig = -fn; rettau = f; rettaut = ft;  % ext GRF: D.u - S.un
   u = LapSeval_panels(t,sf,retsig) + LapDeval_panels(t,sf,rettau) + RetDeval_panels(t,sf,rettaut);
@@ -50,12 +50,10 @@ else               % ------------- on-surf GRF w/ local aux nodes, pan k, pt j
   sn.x = s{k}.auxnodes(:,:,j);  sn.nx = s{k}.auxnormals(:,:,j);
   sn.w = s{k}.auxwei(:,j)';           % must be col vec
   sn.N = numel(sn.w);       % finish the fake aux src pan
-  tret = t.t - s{k}.auxdelays(:,j)';   % near panel's aux eval times, col vec
+  tret = ttarg - s{k}.auxdelays(:,j)';   % near panel's aux eval times, col vec
   [f,fn,ft] = data_ptsrc(xs,T,Tt,tret,sn.x,sn.nx);      % near
   retsig = -fn; rettau = f; rettaut = ft;  % ext GRF: D.u - S.un
   u = u + LapSeval_panels(t,sn,retsig) + LapDeval_panels(t,sn,rettau) + RetDeval_panels(t,sn,rettaut);
-  uex = data_ptsrc(xs,T,Tt,t.t,t.x) / 2;       % on-surf GRF
+  uex = data_ptsrc(xs,T,Tt,ttarg,t.x) / 2;       % on-surf GRF
   fprintf('N=%d, on-surf GRF test at 1 pt: u err = %.3g\n', N, u-uex)
 end
-
-% ** note conflict field btw s.t - time for nodes, vs coord chart locs in R2!
