@@ -1,5 +1,6 @@
 % GAUSS  nodes x (Legendre points) and weights w
 %        for Gauss quadrature on [-1,1], for N small (<100). From Trefethen book
+% [x,w] = gauss(N)
 function [x,w] = gauss(N)
 beta = .5./sqrt(1-(2*(1:N-1)).^(-2));
 T = diag(beta,1) + diag(beta,-1);

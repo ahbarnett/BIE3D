@@ -32,9 +32,10 @@ exec:	TestInterp.f90 TestInterpMat.f90 dspline.o
 gateway.c: gateway.mw Makefile
 	$(MWRAP) -c99complex -mex gateway -mb -list gateway.mw
 	$(MWRAP) -c99complex -mex gateway -c gateway.c gateway.mw
-# hack to link to a F90 module which mwrap seems not to. Replaces 2 lines,
+# Hack to link to a F90 module which mwrap seems not to. Replaces 2 lines,
 # in particular the f2c line starting #define MWF77_interpmat...
 	sed -i 's/interpmatnoalloc_/__dspline_MOD_interpmatnoalloc/' gateway.c
+	sed -i 's/extrapnoalloc_/__dspline_MOD_extrapnoalloc/' gateway.c
 
 # to do the MEX compilation...
 mexfile: gateway.c dspline.o Makefile

@@ -33,3 +33,5 @@ mex_id_ = 'interpmatnoalloc(i int, i double[], i double, i int, o int[x], o int[
 nc = jmax-jmin+1;     % desired number of output grid pts
 umat = umat(:,1:nc);  % resize to correct size...
 upmat = upmat(:,1:nc);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

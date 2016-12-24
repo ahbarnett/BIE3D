@@ -5,7 +5,7 @@
 clear
 dt = 0.2;
 tinterp = [-1:0.05:0];  % uniform set of r=21 times in [-1,0]
-m = 4;   % order 2,4,6... seems fails if odd (writes garbage to some entries)
+m = 8;   % order 2,4,6... seems fails if odd (writes garbage to some entries)
 [jmax jmin umat upmat] = interpmat(tinterp,dt,m);
 'j range:'
 [jmin,jmax]

@@ -336,10 +336,13 @@ mxWrapReturnZDef   (mxWrapReturn_dcomplex, dcomplex,
 
 #if defined(MWF77_CAPS)
 #define MWF77_interpmatnoalloc INTERPMATNOALLOC
+#define MWF77_extrapnoalloc EXTRAPNOALLOC
 #elif defined(MWF77_UNDERSCORE1)
 #define MWF77_interpmatnoalloc __dspline_MOD_interpmatnoalloc
+#define MWF77_extrapnoalloc __dspline_MOD_extrapnoalloc
 #else /* f2c convention */
 #define MWF77_interpmatnoalloc __dspline_MOD_interpmatnoalloc
+#define MWF77_extrapnoalloc __dspline_MOD_extrapnoalloc
 #endif
 
 #ifdef __cplusplus
@@ -351,6 +354,7 @@ extern "C" { /* Prevent C++ name mangling */
 #endif
 
 MWF77_RETURN MWF77_interpmatnoalloc(int*, double*, double*, int*, int*, int*, double*, double*, int*);
+MWF77_RETURN MWF77_extrapnoalloc(double*, int*);
 
 #ifdef __cplusplus
 } /* end extern C */
@@ -431,6 +435,39 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
+/* ---- gateway.mw: 52 ----
+ * extrapnoalloc(inout double[] xcof, int m);
+ */
+const char* stubids2_ = "extrapnoalloc(io double[], i int)";
+
+void mexStub2(int nlhs, mxArray* plhs[],
+              int nrhs, const mxArray* prhs[])
+{
+    const char* mw_err_txt_ = 0;
+    double*     in0_ =0; /* xcof       */
+    int         in1_;    /* m          */
+
+    if (mxGetM(prhs[0])*mxGetN(prhs[0]) != 0) {
+        in0_ = mxWrapGetArray_double(prhs[0], &mw_err_txt_);
+        if (mw_err_txt_)
+            goto mw_err_label;
+    } else
+        in0_ = NULL;
+    in1_ = (int) mxWrapGetScalar(prhs[1], &mw_err_txt_);
+    if (mw_err_txt_)
+        goto mw_err_label;
+    if (mexprofrecord_)
+        mexprofrecord_[2]++;
+    MWF77_extrapnoalloc(in0_, &in1_);
+    plhs[0] = mxCreateDoubleMatrix(mxGetM(prhs[0]), mxGetN(prhs[0]), mxREAL);
+    mxWrapCopy_double(plhs[0], in0_, mxGetM(prhs[0])*mxGetN(prhs[0]));
+
+mw_err_label:
+    if (in0_)  mxFree(in0_);
+    if (mw_err_txt_)
+        mexErrMsgTxt(mw_err_txt_);
+}
+
 /* ----
  */
 void mexFunction(int nlhs, mxArray* plhs[],
@@ -446,12 +483,14 @@ void mexFunction(int nlhs, mxArray* plhs[],
         mexErrMsgTxt("Identifier should be a string");
     else if (strcmp(id, stubids1_) == 0)
         mexStub1(nlhs,plhs, nrhs-1,prhs+1);
+    else if (strcmp(id, stubids2_) == 0)
+        mexStub2(nlhs,plhs, nrhs-1,prhs+1);
     else if (strcmp(id, "*profile on*") == 0) {
         if (!mexprofrecord_) {
-            mexprofrecord_ = (int*) malloc(2 * sizeof(int));
+            mexprofrecord_ = (int*) malloc(3 * sizeof(int));
             mexLock();
         }
-        memset(mexprofrecord_, 0, 2 * sizeof(int));
+        memset(mexprofrecord_, 0, 3 * sizeof(int));
     } else if (strcmp(id, "*profile off*") == 0) {
         if (mexprofrecord_) {
             free(mexprofrecord_);
@@ -462,6 +501,7 @@ void mexFunction(int nlhs, mxArray* plhs[],
         if (!mexprofrecord_)
             mexPrintf("Profiler inactive\n");
         mexPrintf("%d calls to gateway.mw:30\n", mexprofrecord_[1]);
+        mexPrintf("%d calls to gateway.mw:52\n", mexprofrecord_[2]);
     } else if (strcmp(id, "*profile log*") == 0) {
         FILE* logfp;
         if (nrhs != 2 || mxGetString(prhs[1], id, sizeof(id)) != 0)
@@ -472,6 +512,7 @@ void mexFunction(int nlhs, mxArray* plhs[],
         if (!mexprofrecord_)
             fprintf(logfp, "Profiler inactive\n");
         fprintf(logfp, "%d calls to gateway.mw:30\n", mexprofrecord_[1]);
+        fprintf(logfp, "%d calls to gateway.mw:52\n", mexprofrecord_[2]);
         fclose(logfp);
     } else
         mexErrMsgTxt("Unknown identifier");

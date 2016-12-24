@@ -211,6 +211,27 @@ CONTAINS
 !
   END SUBROUTINE Extrap  
 
+  SUBROUTINE Extrapnoalloc(xcof,m)
+! Barnett needed version that doesn't allocate, to call from matlab/mex
+! 12/22/16
+  INTEGER, INTENT(IN) :: m
+  DOUBLE PRECISION, DIMENSION(0:m), INTENT(INOUT) :: xcof
+!
+! Return extrapolation coefficients for degree m
+!
+  INTEGER :: k,j
+!
+  DO k=0,m
+    xcof(k)=1.d0
+    DO j=0,m
+      IF (j /= k) THEN
+        xcof(k)=xcof(k)*DBLE(m+1-j)/DBLE(k-j)
+      END IF
+    END DO
+  END DO 
+!
+  END SUBROUTINE Extrapnoalloc
+
   SUBROUTINE InterpMat(r,tinterp,dt,m,jmax,jmin,umat,upmat)
 !
   INTEGER, INTENT(IN) :: m,r
