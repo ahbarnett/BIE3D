@@ -435,7 +435,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- gateway.mw: 52 ----
+/* ---- gateway.mw: 53 ----
  * extrapnoalloc(inout double[] xcof, int m);
  */
 const char* stubids2_ = "extrapnoalloc(io double[], i int)";
@@ -501,7 +501,7 @@ void mexFunction(int nlhs, mxArray* plhs[],
         if (!mexprofrecord_)
             mexPrintf("Profiler inactive\n");
         mexPrintf("%d calls to gateway.mw:30\n", mexprofrecord_[1]);
-        mexPrintf("%d calls to gateway.mw:52\n", mexprofrecord_[2]);
+        mexPrintf("%d calls to gateway.mw:53\n", mexprofrecord_[2]);
     } else if (strcmp(id, "*profile log*") == 0) {
         FILE* logfp;
         if (nrhs != 2 || mxGetString(prhs[1], id, sizeof(id)) != 0)
@@ -512,7 +512,7 @@ void mexFunction(int nlhs, mxArray* plhs[],
         if (!mexprofrecord_)
             fprintf(logfp, "Profiler inactive\n");
         fprintf(logfp, "%d calls to gateway.mw:30\n", mexprofrecord_[1]);
-        fprintf(logfp, "%d calls to gateway.mw:52\n", mexprofrecord_[2]);
+        fprintf(logfp, "%d calls to gateway.mw:53\n", mexprofrecord_[2]);
         fclose(logfp);
     } else
         mexErrMsgTxt("Unknown identifier");

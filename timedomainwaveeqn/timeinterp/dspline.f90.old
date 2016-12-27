@@ -250,16 +250,19 @@ CONTAINS
 ! upmat   - matrix of dimension r X (jmax-jmin+1) for du/dt interpolation
 !
   INTEGER :: jt,mh,j,k,jf,nr,kp,nc
-  DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: u_to_cof
-  DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE :: uf_to_cof
+  DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, SAVE :: u_to_cof
+  DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE, SAVE :: uf_to_cof
+  INTEGER, SAVE :: oldm=0 
   DOUBLE PRECISION, DIMENSION(0:2*m+1) :: c
   DOUBLE PRECISION, DIMENSION(0:m+1) :: x,y
   DOUBLE PRECISION, DIMENSION(0:m) :: xf,yf
   INTEGER, DIMENSION(r) :: jtmax,jtmin 
   DOUBLE PRECISION :: tl,tr,s  
-!  LOGICAL, SAVE :: first_call=.TRUE.
+  LOGICAL, SAVE :: first_call=.TRUE.
 !
   mh=m/2
+!
+  IF (first_call) THEN 
 !
     ALLOCATE(u_to_cof(0:2*m+1,m+2)) 
     DO k=0,m+1
@@ -293,6 +296,50 @@ CONTAINS
       END DO
     END DO
 !
+    first_call=.FALSE.
+    oldm=m
+!
+  ELSE IF (oldm /= m) THEN
+!
+    DEALLOCATE(u_to_cof,uf_to_cof)
+!
+    ALLOCATE(u_to_cof(0:2*m+1,m+2)) 
+    mh=m/2
+    DO k=0,m+1
+      x(k)=dt*DBLE(k-mh) 
+    END DO 
+    tl=x(mh)
+    tr=x(mh+1)
+    DO k=0,m+1
+      y=0.d0
+      y(k)=1.d0
+      CALL point_to_dspline(x,y,c,tl,tr,m,m+1)
+      DO j=0,2*m+1
+        u_to_cof(j,k+1)=c(j)
+      END DO 
+    END DO
+!
+    ALLOCATE(uf_to_cof(mh,0:2*m+1,m+1))
+    DO k=0,m
+      xf(k)=dt*DBLE(k-m) 
+    END DO 
+    DO jf=1,mh
+      tr=dt*DBLE(jf-mh)
+      tl=tr-dt 
+      DO k=0,m
+        yf=0.d0
+        yf(k)=1.d0
+        CALL point_to_dspline(xf,yf,c,tl,tr,m,m)
+        DO j=0,2*m+1
+          uf_to_cof(jf,j,k+1)=c(j)
+        END DO 
+      END DO
+    END DO
+!
+    oldm=m
+!
+  END IF
+!
   
   DO jt=1,r 
 !
@@ -317,7 +364,7 @@ CONTAINS
   nc=jmax-jmin+1
   ALLOCATE(umat(r,nc),upmat(r,nc))
   umat=0.d0
-  upmat=0.d0 
+  upmat=0.d0
 !
   DO jt=1,r
     s=tinterp(jt)-dt*(DBLE(INT(tinterp(jt)/dt))-.5d0)
@@ -350,7 +397,9 @@ CONTAINS
 !
   END SUBROUTINE InterpMat
 
-! Barnett/MEX needed this f77-style version which assumes outputs allocated:
+
+
+! Barnett needed this simpler version without allocation of output arrays:
   SUBROUTINE InterpMatnoalloc(r,tinterp,dt,m,jmax,jmin,umat,upmat,nc)
 !
   INTEGER, INTENT(IN) :: m,r,nc
@@ -369,16 +418,24 @@ CONTAINS
 ! upmat   - matrix of dimension r X (jmax-jmin+1) for du/dt interpolation
 !
   INTEGER :: jt,mh,j,k,jf,nr,kp
-  DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: u_to_cof
-  DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE :: uf_to_cof
+  DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, SAVE :: u_to_cof
+  DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE, SAVE :: uf_to_cof
+  INTEGER, SAVE :: oldm=0 
   DOUBLE PRECISION, DIMENSION(0:2*m+1) :: c
   DOUBLE PRECISION, DIMENSION(0:m+1) :: x,y
   DOUBLE PRECISION, DIMENSION(0:m) :: xf,yf
   INTEGER, DIMENSION(r) :: jtmax,jtmin 
   DOUBLE PRECISION :: tl,tr,s  
-!  LOGICAL, SAVE :: first_call=.TRUE.
+  LOGICAL, SAVE :: first_call=.TRUE.
 !
-  mh=m/2
+! for MEX output to matlab: (Barnett)
+  character(len=80) str
+  integer :: i
+  integer*4, external :: mexPrintf
+!
+ mh=m/2
+!
+  IF (first_call) THEN 
 !
     ALLOCATE(u_to_cof(0:2*m+1,m+2)) 
     DO k=0,m+1
@@ -412,6 +469,50 @@ CONTAINS
       END DO
     END DO
 !
+    first_call=.FALSE.
+    oldm=m
+!
+  ELSE IF (oldm /= m) THEN
+!
+    DEALLOCATE(u_to_cof,uf_to_cof)
+!
+    ALLOCATE(u_to_cof(0:2*m+1,m+2)) 
+    mh=m/2
+    DO k=0,m+1
+      x(k)=dt*DBLE(k-mh) 
+    END DO 
+    tl=x(mh)
+    tr=x(mh+1)
+    DO k=0,m+1
+      y=0.d0
+      y(k)=1.d0
+      CALL point_to_dspline(x,y,c,tl,tr,m,m+1)
+      DO j=0,2*m+1
+        u_to_cof(j,k+1)=c(j)
+      END DO 
+    END DO
+!
+    ALLOCATE(uf_to_cof(mh,0:2*m+1,m+1))
+    DO k=0,m
+      xf(k)=dt*DBLE(k-m) 
+    END DO 
+    DO jf=1,mh
+      tr=dt*DBLE(jf-mh)
+      tl=tr-dt 
+      DO k=0,m
+        yf=0.d0
+        yf(k)=1.d0
+        CALL point_to_dspline(xf,yf,c,tl,tr,m,m)
+        DO j=0,2*m+1
+          uf_to_cof(jf,j,k+1)=c(j)
+        END DO 
+      END DO
+    END DO
+!
+    oldm=m
+!
+  END IF
+!
   
   DO jt=1,r 
 !
@@ -434,9 +535,17 @@ CONTAINS
   END DO 
 !
 !  nc=jmax-jmin+1
-!  ALLOCATE(umat(r,nc),upmat(r,nc))
+! nc now input param, debug it...
+!  write(str,*) 'nc=',nc,achar(10)
+!  i = mexPrintf(str)
+! Barnett added optional alloc allowing calling routine to have done it:
+!  if (.not. allocated(umat)) then
+!     WRITE(*,*) 'not alloc'
+!     ALLOCATE(umat(r,nc),upmat(r,nc))
+!  end if
+! shouldn't be necessary:
   umat=0.d0
-  upmat=0.d0 
+  upmat=0.d0
 !
   DO jt=1,r
     s=tinterp(jt)-dt*(DBLE(INT(tinterp(jt)/dt))-.5d0)
@@ -465,9 +574,12 @@ CONTAINS
       END DO
     END IF
 !
+!  debug:
+!  write(str,*) 'umat(jt,2)=',umat(jt,2),achar(10)
+!  i = mexPrintf(str)
   END DO
 !
-  END SUBROUTINE InterpMatnoalloc 
+  END SUBROUTINE InterpMatnoalloc  
 
 END MODULE dspline 
  
