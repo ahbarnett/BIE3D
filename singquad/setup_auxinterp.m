@@ -22,7 +22,8 @@ function I = setup_auxinterp(tt,o)
 %                  source panel.
 %          I.z  - (2-by-(naux*p^2)) the aux nodes used, in param space,
 %                 in the ordering used 
-%          I.cen - (2-by-1) the centers of the source boxes in param space.
+%          I.cen - 9-by-1 cell array of 2-by-1 centers of the source boxes
+%                 in param space.
 %
 % See also: CREATE_PANELS, where the std nei ordering must match.
 

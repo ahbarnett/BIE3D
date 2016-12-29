@@ -53,9 +53,9 @@ gateway.c: gateway.mw Makefile
 mexfile: gateway.c dspline.o Makefile
 	$(MEX) gateway.c dspline.o -largeArrayDims -lgfortran -lm
 
-# remove objects and executables, but not the mwrap-generated stuff...
+# remove objects, executables, outputs, but not the mwrap-generated stuff...
 clean:
-	rm -f *.o *.mod *.out *.mex*
+	rm -f *.o *.mod *.out *.mex* fort.*
 
 # clean the stuff that mwrap makes... (careful; not needed by basic user!)
 mwrapclean: clean
