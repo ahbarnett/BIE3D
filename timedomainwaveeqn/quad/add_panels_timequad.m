@@ -9,7 +9,7 @@ function pan = add_panels_timequad(pan, o)
 % Adds fields to each panel pan{k} in the output struct:
 %   auxdelays (naux by targ) - time delays of each aux node for each target
 
-% Barnett 12/18/16
+% Barnett 12/18/16, broke out disteval 12/29/16
 
 for k=1:numel(pan)
   p = pan{k};
@@ -17,15 +17,6 @@ for k=1:numel(pan)
   n = p.naux;
   pan{k}.auxdelays = 0*p.auxwei;
   for j=1:p.N        % loop over targs in this panel
-    pan{k}.auxdelays(:,j) = disteval(p.auxnodes(:,:,j),p.x(:,j)); % col vec
+    pan{k}.auxdelays(:,j) = dists(p.auxnodes(:,:,j),p.x(:,j)); % col vec
   end
 end
-
-function r = disteval(x,y)
-% Dumb dense distance evaluator from sources to targets in R3.
-% Inputs: x targ (3-by-M), y src (3-by-N)
-% NB: fills M*N matrix, so assumes small cases
-d1 = bsxfun(@minus,x(1,:)',y(1,:));   % 3 coords of displacement matrix (M*N)
-d2 = bsxfun(@minus,x(2,:)',y(2,:));
-d3 = bsxfun(@minus,x(3,:)',y(3,:));
-r = sqrt(d1.^2+d2.^2+d3.^2);          % matrix, size M*N

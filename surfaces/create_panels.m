@@ -27,11 +27,15 @@ function [pan N] = create_panels(shape,so,o)
 %        spfac - (scalar) size factor converting to speed in chart coords.
 %        nei - indices in panel list of (usually 8) neighbor panels, in a
 %              standard ordering (must match that in set_auxinterp).
+%        neix1 - (3 by 8) 3D coords of first node in each neighbor panel,
+%              in std ordering, useful to identify neighbors w/o global index
+%              (used by: relatedpanel.m)
 %  In addition pan{1} contains the following fields needed to specify geometry:
 %        mp, np - numbers of vertical and horizontal panels.
 %        topo - topology, eg 'torus'
 
 % Barnett 7/11/15. restarted 7/14/16, swapped np & mp 7/18/16
+% 12/29/30 neix1.
 
 % future ideas:
 % *** why not make just the surf pts be input, and derive all geom
@@ -63,6 +67,11 @@ if strcmp(shape,'torus')
     pan{1}.mp=mp; pan{1}.np=np; pan{1}.topo = 'torus'; pan{1}.p = p;
 end
 pan = panel_smooth_quad(pan,p);  % does all panels
+% add neix1 tags...
+for k=1:numel(pan), nei=pan{k}.nei;
+  x = []; for n=1:numel(nei), x = [x pan{nei(n)}.x(:,1)]; end
+  pan{k}.neix1 = x;
+end
 %%%
 
 function pan = panel_smooth_quad(pan,p)   % setup G-L tensor native quadr

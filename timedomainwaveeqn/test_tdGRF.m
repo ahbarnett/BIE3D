@@ -14,7 +14,7 @@ fprintf('error in time deriv: %.3g\n',(T(t+eps)-T(t-eps))/(2*eps) - Tt(t))
 clear t
 xs = [0.9;-0.2;0.1];   % src pt for data, must be inside
 
-side = 1;  % -1,0,1: choose nature of GRF test pt (a fake 1-pt panel)
+side = 0;  % -1,0,1: choose nature of GRF test pt (a fake 1-pt panel)
 
 if side==1, t.x = [1.3;0.1;0.8];          % exterior...
 elseif side==-1, t.x = [-.8;.1;.2];       % or interior

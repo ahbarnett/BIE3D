@@ -42,13 +42,19 @@ if verb % check interp matches direct eval of densities ret by eval at targ...
   fprintf('interp err, ret dens from dens hist : sig %.2g, tau %.2g, tau'' %.2g\n',max(abs(sigri-retsig)), max(abs(tauri-rettau)), max(abs(tautri-rettaut)))
 end   % ...we notice loss of 2 digits when interp to give a t-deriv :(
 
-% build "vectors" (matrices) which eval u(t=0,x=targ) given dens history data:
+% build vectors which eval u(t=0,x=targ) given dens history data:
 [S D Dp] = tdSDmats(t.x,x,nx,w);  % each is 1xN
 Starg = a'.*repmat(S,[n 1]);      % coeff vectors packed as nxN matrices
 Dtarg = a'.*repmat(D,[n 1]) + ap'.*repmat(Dp,[n 1]);
+Starg = Starg(:)'; Dtarg = Dtarg(:)';  % row vecs
+
+% or test the routine to build them
+t2.x = [t.x, t.x+[1;0;0]];    % 2-target test "panel", checks multi-targ case
+[Starg,Dtarg] = tdSDinterpmats_panels(t2,s,[],struct('n',n,'dt',dt,'m',m));
+Starg = Starg(1,:); Dtarg = Dtarg(1,:); % keep only 1st target
 
 % test them on dens history data, via u(x,t) = S.sigma + (wave eqn D).tau :
-u = dot(Starg(:),sighist(:)) + dot(Dtarg(:),tauhist(:));
+u = dot(Starg,sighist(:)) + dot(Dtarg,tauhist(:));
 uex = data_ptsrc(xs,T,Tt,ttarg,t.x);     % what ext GRF should give
 fprintf('N=%d, dens-interp ext GRF test at 1 pt: u err = %.3g\n', N, u-uex)
 
