@@ -8,6 +8,7 @@
 clear; verb = 1;
 so.a=1; so.b=0.5; o.p=6;
 [s N] = create_panels('torus',so,o); % surf: default # pans
+diam = 2*(so.a+so.b);                       % specific to torus shape
 
 % surf data...
 w0 = 2.0; T = @(t) cos(w0*t); Tt = @(t) -w0*sin(w0*t); % data src t-func, tested
@@ -20,7 +21,6 @@ t.N = 1; t.x = [1.3;0.1;0.8];    % single test targ pt, exterior...
 ttarg = 0.0;          % test target time (avoids "t" panel field conflict)
 tret = ttarg - dists(t.x,x);     % retarded times
 
-diam = 2*(so.a+so.b);                       % specific to torus shape
 n = ceil(10 + m + max([-tret, diam])/dt);   % # history t-steps to store
 [jmax jmin a ap] = interpmat(tret,dt,m);    % Tom's coeffs (1 row per tret)
 fprintf('jrange = [%d,%d] in n=%d time history steps\n',jmin,jmax,n)

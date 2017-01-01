@@ -13,6 +13,7 @@ function [Sret Dret] = tdSDinterpmats_panels(tpan,span,paninfo,intinfo)
 % See also: TEST_TDGRF_INTERP.m which tests this (near bottom).
 
 % Barnett 12/29/16
+if nargin==0, test_tdSDinterpmats_panels; return; end
 
 M = size(getallnodes({tpan}),2);          % # targets
 t = tpan;
@@ -71,3 +72,39 @@ for k=1:M     % loop over targs
   jj = [jj; joff+j+n*(i-1)];              % time indices in the Nn vector
 end
 Dret = Dret + sparse(ii,jj,dd,M,N*n);  % may have slightly different patterns
+
+
+%%%%%
+function test_tdSDinterpmats_panels   % do off/on surf wave eqn GRF test,
+% taken from test_tdGRF_interp.  Barnett 1/1/17
+side = 1;    %  GRF test:   1 ext, 0 on-surf
+dt = 0.1;   % timestep
+m = 4;      % control time interp order (order actually m+2)
+
+so.a=1; so.b=0.5; o.p=6;
+[s N] = create_panels('torus',so,o); % surf: default # pans
+[x nx w] = getallnodes(s);
+distmax = 4.0;       % largest dist from anything to anything
+n = ceil(distmax/dt);
+
+if side==1
+  t.N = 1; t.x = [1.3;0.1;0.8];    % single test targ pt, exterior...
+else
+  
+end
+ttarg = 0.0;          % test target time (avoids "t" panel field conflict)
+
+% surf data for GRF...
+w0 = 2.0; T = @(t) cos(w0*t); Tt = @(t) -w0*sin(w0*t); % data src t-func, tested
+xs = [0.9;-0.2;0.1];   % src pt for data, must be inside
+% eval sig, tau on {n history grid} x {N bdry nodes}
+tt = dt*(-n+1:0); ttt = repmat(tt,[1 N]);
+xx = kron(x,ones(1,n)); nxx = kron(nx,ones(1,n));   % ttt,xx,nxx spacetime list
+[f,fn] = data_ptsrc(xs,T,Tt,ttt,xx,nxx);       % output ft unused
+sighist = -fn; tauhist = f;  % col vecs, ext wave eqn GRF: u = D.u - S.un
+
+[Starg,Dtarg] = tdSDinterpmats_panels(t,s,[],struct('n',n,'dt',dt,'m',m));
+
+u = dot(Starg,sighist) + dot(Dtarg,tauhist);
+uex = data_ptsrc(xs,T,Tt,ttarg,t.x);     % what ext GRF should give
+fprintf('N=%d, dens-interp ext GRF test at 1 pt: u err = %.3g\n', N, u-uex)
