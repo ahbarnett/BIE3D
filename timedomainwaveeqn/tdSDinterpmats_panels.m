@@ -16,18 +16,16 @@ function [Sret Dret] = tdSDinterpmats_panels(tpan,span,Linfo,intinfo)
 %
 % See also: TEST_TDGRF_INTERP.m which tests this (near bottom).
 
-% Barnett 12/29/16
+% Barnett 12/29/16 - 1/3/17
 if nargin==0, test_tdSDinterpmats_panels; return; end
 
 M = size(getallnodes({tpan}),2);          % # targets
 t = tpan;
 if numel(span)==1, span = {span}; end
-% ** idea: loop through all span, tra
-% If it's a self-or-nei of t, then treat each targ node in t separately,
-% since they have own aux nodes (to get spatial sing correct).
-% Will need to make dummy targ panel w/ 1 node, loop over t's targ nodes.
+N = size(getallnodes(span),2);          % # sources
 n = intinfo.n;
-Sret = []; Dret = [];
+Sret = sparse(M,n*N); Dret = Sret;        % init sparse mats
+coff = 0;                              % track column offset for sparse mat out
 for q=1:numel(span), s = span{q};    % loop over src pans in right order
   r = relatedpanel(t,s);
   if r==0
@@ -48,7 +46,10 @@ for q=1:numel(span), s = span{q};    % loop over src pans in right order
       Dq(j,:) = reshape(reshape(Da,[n saux.N]) * Ltjsaux, [1 nN]);
     end
   end
-  Sret = [Sret, Sq]; Dret = [Dret, Dq];   % stack each pan as block col
+  nc = size(Sq,2);
+  Sret(:,coff+(1:nc)) = Sq;       % dump each src pan block into sparse mat out
+  Dret(:,coff+(1:nc)) = Dq;
+  coff = coff + nc;
 end
 
 %%%%%%
@@ -125,9 +126,13 @@ xx = kron(x,ones(1,n)); nxx = kron(nx,ones(1,n));   % ttt,xx,nxx spacetime list
 [f,fn] = data_ptsrc(xs,T,Tt,ttt,xx,nxx);       % output ft unused
 sighist = -fn; tauhist = f;  % col vecs, ext wave eqn GRF: u = D.u - S.un
 
+tic%, profile clear; profile on
 [Starg,Dtarg] = tdSDinterpmats_panels(t,s,Linfo,struct('n',n,'dt',dt,'m',m));
+toc%, profile off; profile viewer
 
 u = Starg*sighist + Dtarg*tauhist;
 uex = data_ptsrc(xs,T,Tt,ttarg,t.x);     % what ext GRF should give
 if side==0, uex=uex/2; end   % on-surf principal value
 fprintf('N=%d, dens-interp ext GRF test: u err = %.3g\n', N, max(abs(u-uex)))
+%u, uex
+% whos   10MB, 1 sec per pan -> 1GB, 1 min for whole surf.
