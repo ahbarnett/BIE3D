@@ -15,11 +15,16 @@ function I = setup_auxinterp(tt,o)
 %                        3 1 8      (note this shows the parameter plane)
 %                        4 6 9
 %
-% Outputs: I.L  9-by-1 cell array of interp matrices from n=p^2 nodes in
+% Outputs: I.L - 9-by-1 cell array of interp matrices from n=p^2 nodes in
 %                  each near src panel to all the aux nodes in that panel
-%          I.auxinds  9-by-1 cell array of index lists for which aux nodes
-%                  indices (in naux-fast, src-pan-slow ordering) are in each
-%                  source panel.
+%          I.auxinds - 9-by-1 cell array of index lists, each giving which aux
+%                  nodes (indexed from the full list, which is in naux-fast,
+%                  targ-node-slow ordering) are in this source panel.
+%          I.auxindsbytarg - 9-by-p^2 cell array of index lists for which
+%                  aux nodes indices are in each src panel, for each targ node.
+%          I.Lbytarg - 9-by-p^2 cell array of interp matrices from p^2 nodes in
+%                  each src panel to aux nodes in that panel, for each of p^2
+%                  targets (the 2nd cell array dim indexes target).
 %          I.z  - (2-by-(naux*p^2)) the aux nodes used, in param space,
 %                 in the ordering used 
 %          I.cen - 9-by-1 cell array of 2-by-1 centers of the source boxes
@@ -27,7 +32,7 @@ function I = setup_auxinterp(tt,o)
 %
 % See also: CREATE_PANELS, where the std nei ordering must match.
 
-% Barnett 7/17/16
+% Barnett 7/17/16, auxindsbytarg needed by tdSDinterp... 1/1/17
 if nargin==0, test_setup_auxinterp; return; end
 
 z = panel_sing_auxquad(tt,o);   % slow but ok to do it again
@@ -38,6 +43,7 @@ naux = size(z,2);           % aux nodes per target pt
 I.z = reshape(z, [2 naux*n]);   % horiz stack all aux node locs in param space
 clear z
 I.L = cell(9,1); I.auxinds = cell(9,1); I.cen = cell(9,1);
+
 % x and y centers of 9 cells in std ordering...
 cen = 2*[0 -1 -1 -1 0 0 1 1 1; 0 -1 0 1 -1 1 -1 0 1];  % incr in y fast, then x
 for i=1:9          % loop over self and neighbors
@@ -45,8 +51,13 @@ for i=1:9          % loop over self and neighbors
   x = bsxfun(@minus, I.z, [xc;yc]);  % all aux nodes rel to box ctr
   I.auxinds{i} = find(abs(x(1,:))<1 & abs(x(2,:))<1);  % keep those in [-1,1]^2
   x = x(:,I.auxinds{i});
+  tind = kron(1:n,ones(1,naux)); tind = tind(I.auxinds{i}); % target indices
   I.L{i} = tensorprod_interp(x,t1,t2);
   I.cen{i} = cen(:,i);
+  for j=1:n                     % loop over targ nodes
+    I.auxindsbytarg{i}{j} = I.auxinds{i}(tind==j);
+    I.Lbytarg{i}{j} = I.L{i}(tind==j,:);  % maps p^2 src to aux_ij
+  end
 end
 
 %%%%%%

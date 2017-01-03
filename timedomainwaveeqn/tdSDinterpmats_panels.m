@@ -1,15 +1,19 @@
-function [Sret Dret] = tdSDinterpmats_panels(tpan,span,paninfo,intinfo)
+function [Sret Dret] = tdSDinterpmats_panels(tpan,span,Linfo,intinfo)
 %
-% [Sret Dret] = tdSDinterpmats_panels(tpan,span,paninfo,intinfo)
+% [Sret Dret] = tdSDinterpmats_panels(tpan,span,Linfo,intinfo)
 %
 % eval p^2-by-NT matrices which apply retarded S,D ops from dens hist grids
 %
 % where N is # dofs in all src pans.
 %
-% intinfo has fields: n = # history steps, dt = timestep, m = interp order.
-
+% tpan - target "panel" (ie has fields t.x, t.N)
+%       If is same as a source panel in span, tpan must have auxnodes.
+% Linfo - interpolation struct for the one std panel (from setup_auxinterp).
+% intinfo - time-interp struct, has fields:
+%         n = # history steps, dt = timestep, m = interp order.
+%
 % tpan single panel for now. Includes aux node close & self-eval.
-
+%
 % See also: TEST_TDGRF_INTERP.m which tests this (near bottom).
 
 % Barnett 12/29/16
@@ -22,13 +26,27 @@ if numel(span)==1, span = {span}; end
 % If it's a self-or-nei of t, then treat each targ node in t separately,
 % since they have own aux nodes (to get spatial sing correct).
 % Will need to make dummy targ panel w/ 1 node, loop over t's targ nodes.
+n = intinfo.n;
 Sret = []; Dret = [];
 for q=1:numel(span), s = span{q};    % loop over src pans in right order
   r = relatedpanel(t,s);
   if r==0
     [Sq Dq] = tdSDinterpmats_panelpair(t,s,intinfo);
   else    % s is self or nei of t
-    % ***
+    nN = s.N*n;
+    Sq = nan(t.N,nN); Dq = Sq;
+    for j=1:t.N             % loop over targs and write each as row of Sq
+      tj.x = t.x(:,j); tj.N = 1;    % this targ pt as own struct
+      i = Linfo.auxindsbytarg{r}{j};  % indices in full list of aux nodes
+      saux.x = t.auxnodes(:,i);   % here i indexes the last 2 dims naux*N
+      saux.nx = t.auxnormals(:,i);
+      saux.w = t.auxwei(i);
+      saux.N = numel(saux.w);
+      [Sa Da] = tdSDinterpmats_panelpair(tj,saux,intinfo); % use saux as src pan
+      Ltjsaux = Linfo.Lbytarg{r}{j};     % see: setup_auxinterp
+      Sq(j,:) = reshape(reshape(Sa,[n saux.N]) * Ltjsaux, [1 nN]);
+      Dq(j,:) = reshape(reshape(Da,[n saux.N]) * Ltjsaux, [1 nN]);
+    end
   end
   Sret = [Sret, Sq]; Dret = [Dret, Dq];   % stack each pan as block col
 end
@@ -77,7 +95,7 @@ Dret = Dret + sparse(ii,jj,dd,M,N*n);  % may have slightly different patterns
 %%%%%
 function test_tdSDinterpmats_panels   % do off/on surf wave eqn GRF test,
 % taken from test_tdGRF_interp.  Barnett 1/1/17
-side = 1;    %  GRF test:   1 ext, 0 on-surf
+side = 0;    %  GRF test:   1 ext, 0 on-surf
 dt = 0.1;   % timestep
 m = 4;      % control time interp order (order actually m+2)
 
@@ -89,8 +107,12 @@ n = ceil(distmax/dt);
 
 if side==1
   t.N = 1; t.x = [1.3;0.1;0.8];    % single test targ pt, exterior...
+  Linfo = [];              % spatial interp info
 else
-  
+  o.nr = 8; o.nt = 2*o.nr;     % first add aux quad to panels: aux quad orders
+  s = add_panels_auxquad(s,o);
+  t = s{57};          % on-surf targ is a whole panel
+  Linfo = setup_auxinterp(s{1}.t,o);  % std spatial interp to aux quad
 end
 ttarg = 0.0;          % test target time (avoids "t" panel field conflict)
 
@@ -103,8 +125,9 @@ xx = kron(x,ones(1,n)); nxx = kron(nx,ones(1,n));   % ttt,xx,nxx spacetime list
 [f,fn] = data_ptsrc(xs,T,Tt,ttt,xx,nxx);       % output ft unused
 sighist = -fn; tauhist = f;  % col vecs, ext wave eqn GRF: u = D.u - S.un
 
-[Starg,Dtarg] = tdSDinterpmats_panels(t,s,[],struct('n',n,'dt',dt,'m',m));
+[Starg,Dtarg] = tdSDinterpmats_panels(t,s,Linfo,struct('n',n,'dt',dt,'m',m));
 
-u = dot(Starg,sighist) + dot(Dtarg,tauhist);
+u = Starg*sighist + Dtarg*tauhist;
 uex = data_ptsrc(xs,T,Tt,ttarg,t.x);     % what ext GRF should give
-fprintf('N=%d, dens-interp ext GRF test at 1 pt: u err = %.3g\n', N, u-uex)
+if side==0, uex=uex/2; end   % on-surf principal value
+fprintf('N=%d, dens-interp ext GRF test: u err = %.3g\n', N, max(abs(u-uex)))
