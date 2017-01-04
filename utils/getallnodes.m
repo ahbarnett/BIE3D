@@ -9,6 +9,7 @@ function [x nx w] = getallnodes(pan)
 % http://stackoverflow.com/questions/14882704/how-can-i-access-all-field-elements-of-a-structure-array-nested-in-a-cell-array
 
 % Barnett 7/19/16
+if ~iscell(pan), pan = {pan}; end
 x = cellfun(@(p)p.x,pan,'uniformoutput',0); x = horzcat(x{:});
 if nargout>1
   nx = cellfun(@(p)p.nx,pan,'uniformoutput',0); nx = horzcat(nx{:});

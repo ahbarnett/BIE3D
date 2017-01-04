@@ -32,7 +32,7 @@ function I = setup_auxinterp(tt,o)
 %
 % See also: CREATE_PANELS, where the std nei ordering must match.
 
-% Barnett 7/17/16, auxindsbytarg needed by tdSDinterp... 1/1/17
+% Barnett 7/17/16, bytarg needed by tdSDinterp... 1/3/17
 if nargin==0, test_setup_auxinterp; return; end
 
 z = panel_sing_auxquad(tt,o);   % slow but ok to do it again
