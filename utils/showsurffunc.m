@@ -18,7 +18,7 @@ if ~isfield(o,'nofig'), fig = 1; else fig = 0; end
 
 f = real(f);
 if ~isfield(o,'sc'), o.sc = max(abs(f)); end % colorscale, then symm or not...
-if sum(f<0)==0, cs = [0 o.sc], else cs = o.sc*[-1 1]; end
+if sum(f<0)==0, cs = [0 o.sc]; else cs = o.sc*[-1 1]; end
 
 if strcmp(s{1}.topo,'torus')             % the only case we know
   np = s{1}.np; mp = s{1}.mp; q=s{1}.p; x = s{1}.t(2,1:q); n=size(s{1}.t,2);
@@ -45,9 +45,11 @@ if strcmp(s{1}.topo,'torus')             % the only case we know
   else  % interface ? - TODO make seal up poss w/ Bloch phases
     f = fr;
   end
-  if fig, figure; else, hold on; end, h = surf(X,Y,Z, f);
-  axis equal vis3d; shading interp; xlabel('x'); ylabel('y'); zlabel('z');
-  lightangle(45,0);
+  if fig, figure; end   %else, hold on; end
+  h = surf(X,Y,Z, f); set(h,'ambientstrength',0.7,'facelighting','gouraud')
+  shading interp; xlabel('x'); ylabel('y'); zlabel('z');
+  if fig, lightangle(45,0); end
+  axis equal vis3d; 
 end
 colorbar; colormap(jet(256)); caxis(cs);
 

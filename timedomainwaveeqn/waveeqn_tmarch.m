@@ -12,13 +12,14 @@ distmax = 4.0;       % largest dist from anything to anything
 n = ceil(distmax/dt);
 
 SDload = 1;
-if SDload
+if SDload, disp('loading SD retarded history BIE matrices...')
   load SDtarg_torus_p6_m4_dt01      % precomputed 2GB (took 80 sec)
 else
   o.nr = 8; o.nt = 2*o.nr;     % first add aux quad to panels: aux quad orders
   s = add_panels_auxquad(s,o);
   Linfo = setup_auxinterp(s{1}.t,o);  % std spatial interp to aux quad
-  [Starg,Dtarg] = tdSDinterpmats_panels(t,s,Linfo,struct('n',n,'dt',dt,'m',m));
+  [Starg,Dtarg] = tdSDinterpmats_panels(s,s,Linfo,struct('n',n,'dt',dt,'m',m));
+  %disp('saving...'), save SDtarg_torus_p8_m4_dt01 Starg Dtarg -v7.3
 end
 
 % surf data for GRF test of SDtest vectors only...
@@ -32,7 +33,7 @@ sighist = -fn; tauhist = f;  % col vecs, ext wave eqn GRF: u = D.u - S.un
 
 % set up vectors which compute potential at fixed u(t,x_ext) from dens hist...
 t.N = 1; t.x = [1.3;0.1;0.8];    % single test targ pt, exterior
-tret = ttarg - dists(t.x,x);     % retarded times of surf nodes rel to test pt
+tret = -dists(t.x,x);     % retarded times of surf nodes rel to test pt
 [jmax,jmin,a,ap] = interpmat(tret,dt,m);    % Tom's coeffs (1 row per tret)
 joff = jmin+n-1;         % padding on the ancient side
 if joff<0, error('u_test eval vec requesting too ancient history!'); end
@@ -49,22 +50,25 @@ fprintf('test that the u eval vectors (SDtest) work: %.3g\n', utest-uex)
 
 % pull out current-time matrix (last time index not first!):
 Snow = Starg(:,n:n:end); Dnow = Dtarg(:,n:n:end);  % NxN
-% rep is u = D.mu:
-[Lnow Unow pnow] = lu(speye(N)/2 + Dnow,'vector');   % direct factor on-surf sys
-%rhs = randn(N,1); mu = Unow\(Lnow\rhs(pnow)); norm(Dnow*mu + mu/2 - rhs) % check direct solve via LU
+
+% *** can't yet do alpha since need Sdottarg matrix !
+be = 0;  % rep is u = D.mu + be.S.mu:
+[Lnow Unow pnow] = lu(speye(N)/2 + Dnow + be*Snow,'vector'); % direct factor on-surf sys
+%rhs = randn(N,1); mu = Unow\(Lnow\rhs(pnow)); norm(Dnow*mu + be*Snow*mu + mu/2 - rhs) % check direct solve via LU
 % [set up sparse to do extrap on each node separately (only for pred-corr)]
 
-% Dirichlet data for BVP: t-dep pulse func for interior pt src...
-t0=6; s0=1.0; T = @(t) exp(-0.5*(t-t0).^2/s0^2); Tt = @(t) -((t-t0)/s0^2).*T(t);
+% Dirichlet data for BVP: t-dep pulse func for interior pt src... (max val ~1)
+t0=6; s0=1.0; T = @(t) 5*exp(-0.5*(t-t0).^2/s0^2); Tt = @(t) -((t-t0)/s0^2).*T(t);
 % (t0/s0 = 6 gives 1e-8 of start-up error if no time delay from src to surf)
 %eps = 1e-5; tt = 4.3; fprintf('check Tt vs T: %.3g\n',(T(tt+eps)-T(tt-eps))/(2*eps) - Tt(tt)), clear tt
 
 Ttot = 14.0;     % total time to evolve
 jtot = ceil(Ttot/dt); 
-verb = 1;
+verb = 1;    % 0: text only, 1: final plot, 2: anim, 3: save movie
 muhist = zeros(n*N,1);  % init dens hist
 gs=nan(jtot,1); rs=gs; ms=gs; es=gs;   % to save sizes of things for later
-if verb>1, figure; end
+if verb>2, wO = VideoWriter('tmarch.avi'); open(wO); end
+tic
 for j=1:jtot           % .... marching loop
   tj = j*dt;
   muhist = reshape(muhist,[n N]); muhist = muhist([2:n,n],:); % shuffle back 1
@@ -75,12 +79,19 @@ for j=1:jtot           % .... marching loop
   u = Dtest*muhist;                                  % eval at test pt
   uex = data_ptsrc(xs,T,Tt,tj,t.x);                  % known BVP soln at test pt
   fprintf('j=%d (tj=%.3g):\t err=%.3g \tu=%.6g \tuex=%.6g\n',j,tj,u-uex,u,uex)
-  es(j)=u-uex; gs(j)=norm(gnow); rs(j)=norm(rhs); ms(j)=norm(muhist(n:n:end));
+  es(j)=u-uex; gs(j)=max(abs(gnow)); rs(j)=max(abs(rhs)); ms(j)=max(abs(muhist(n:n:end)));
   %imagesc(reshape(muhist,[n N])); caxis([0 3]); colorbar; drawnow
-  if verb>1, plot([gnow, rhs, muhist(n:n:end)], '.-'); title(sprintf('t=%.3g',tj)); legend('g','rhs','\mu_{now}'); drawnow, end
-end                     % ....
+  if verb>1, %figure(1); plot([gnow, rhs, muhist(n:n:end)], '.-'); title(sprintf('t=%.3g',tj)); legend('g','rhs','\mu_{now}'); drawnow
+    o=[]; o.nofig=1; figure(1); set(gcf,'position',[1000 500 500 800]); subplot(2,1,1);
+    showsurffunc(s,gnow,o); light; caxis([0 1]); title(sprintf('g:  t=%4.1f',tj));
+    subplot(2,1,2); showsurffunc(s,muhist(n:n:end),o); caxis([0 25]); light; title('\mu_{now}'); drawnow;
+    if verb>2, writeVideo(wO,getframe(gcf)); end
+  end
+end                    % ....
+fprintf('done %d steps in %.3g sec: %.3g sec per t-step\n', jtot, toc, toc/jtot)
+if verb>2, close(wO); end        % writes AVI movie out
 if verb, figure; semilogy([gs rs ms abs(es)],'.-');
-  legend('||g||','||rhs||','||\mu_{now}||','u err'); xlabel('timesteps');
+  legend('||g||_\infty','||rhs||_\infty','||\mu_{now}||_\infty','u err'); xlabel('timesteps');
   axis tight;
   title(sprintf('torus, non-osc pulse, \\delta t = %.3g',dt));
 end
