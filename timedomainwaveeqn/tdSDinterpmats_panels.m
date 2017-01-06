@@ -1,10 +1,11 @@
-function [Sret Dret] = tdSDinterpmats_panels(tpan,span,Linfo,intinfo)
+function [Sret Dret Sdotret] = tdSDinterpmats_panels(tpan,span,Linfo,intinfo)
 %
-% [Sret Dret] = tdSDinterpmats_panels(tpan,span,Linfo,intinfo)
+% [Sret Dret Sdotret] = tdSDinterpmats_panels(tpan,span,Linfo,intinfo)
 %
-% eval p^2-by-NT matrices which apply retarded S,D ops from dens hist grids
+%  eval p^2-by-NT matrices which apply retarded S,D, and S(d/dt) ops from dens
+%  hist grids
 %
-% where N is # dofs in all src pans.
+%  where N is # dofs in all src pans.
 %
 % tpan - target "panel" (ie has fields t.x, t.N)
 %       If is same as a source panel in span, tpan must have auxnodes.
@@ -14,9 +15,11 @@ function [Sret Dret] = tdSDinterpmats_panels(tpan,span,Linfo,intinfo)
 %
 % tpan single panel for now. Includes aux node close & self-eval.
 %
-% See also: TEST_TDGRF_INTERP.m which tests this (near bottom).
+% Without arguments, does self-test.
+%
+% See also: TEST_TDGRF_INTERP.m which is an older driver (near bottom).
 
-% Barnett 12/29/16 - 1/4/17
+% Barnett 12/29/16 - 1/4/17. Sdotret 1/7/17
 if nargin==0, test_tdSDinterpmats_panels; return; end
 
 if numel(tpan)==1, tpan = {tpan}; end
@@ -24,21 +27,21 @@ M = size(getallnodes(tpan),2);          % # target nodes
 if numel(span)==1, span = {span}; end
 N = size(getallnodes(span),2);          % # source nodes
 n = intinfo.n;
-S.i = []; S.j = []; S.v = []; S.ptr = 0; D = S;          % sparse lists
+S.i = []; S.j = []; S.v = []; S.ptr = 0; D = S; Sd = S;         % sparse lists
 roff = 0;                           % track roww offset in sparse mat out
 for i=1:numel(tpan), t = tpan{i};   % ----- outer targ panel loop
   fprintf('targ pan #%d...\n',i)
   coff = 0;                           % track column offset for sparse mat out
   nnzmax = ceil(20*N);                % allocation size for Si,Di targ-pan NNZ
   Si.i = nan(nnzmax,1); Si.j = Si.i; Si.v = Si.i; Si.ptr = 0;
-  Di = Si;
+  Di = Si; Sdi = Si;
   for q=1:numel(span), s = span{q};   % loop over src pans in right order
     r = relatedpanel(t,s);
     if r==0    % s is unrelated, ie far from t
-      [Sq Dq] = tdSDinterpmats_panelpair(t,s,intinfo);
+      [Sq Dq Sdq] = tdSDinterpmats_panelpair(t,s,intinfo);
     else    % s is self or nei of t
       nN = s.N*n;
-      Sq = nan(t.N,nN); Dq = Sq;
+      Sq = nan(t.N,nN); Dq = Sq; Sdq = Sq;
       for j=1:t.N             % loop over targs and write each as row of Sq
         tj.x = t.x(:,j); tj.N = 1;    % this targ pt as own struct
         i = Linfo.auxindsbytarg{r}{j};  % indices in full list of aux nodes
@@ -46,10 +49,11 @@ for i=1:numel(tpan), t = tpan{i};   % ----- outer targ panel loop
         saux.nx = t.auxnormals(:,i);
         saux.w = t.auxwei(i);
         saux.N = numel(saux.w);
-        [Sa Da] = tdSDinterpmats_panelpair(tj,saux,intinfo);  % saux as src pan
+        [Sa Da Sda] = tdSDinterpmats_panelpair(tj,saux,intinfo);  % saux as src pan
         Ltjsaux = Linfo.Lbytarg{r}{j};     % see: setup_auxinterp
         Sq(j,:) = reshape(reshape(Sa,[n saux.N]) * Ltjsaux, [1 nN]);
         Dq(j,:) = reshape(reshape(Da,[n saux.N]) * Ltjsaux, [1 nN]);
+        Sdq(j,:) = reshape(reshape(Sda,[n saux.N]) * Ltjsaux, [1 nN]);
       end
     end
     %  dump each src blk into sparse lists for this targ panel...
@@ -57,6 +61,8 @@ for i=1:numel(tpan), t = tpan{i};   % ----- outer targ panel loop
     Si.i(hh) = ii+roff;  Si.j(hh) = jj+coff;  Si.v(hh) = vv;
     [ii jj vv] = find(Dq); nh=numel(ii); hh = Di.ptr+(1:nh); Di.ptr = Di.ptr+nh;
     Di.i(hh) = ii+roff;  Di.j(hh) = jj+coff;  Di.v(hh) = vv;
+    [ii jj vv] = find(Sdq); nh=numel(ii); hh = Sdi.ptr+(1:nh); Sdi.ptr = Sdi.ptr+nh;
+    Sdi.i(hh) = ii+roff;  Sdi.j(hh) = jj+coff;  Sdi.v(hh) = vv;
     coff = coff + size(Sq,2);
   end
   % dump each targ blk row into sparse lists... (don't append; too slow!)
@@ -64,10 +70,13 @@ for i=1:numel(tpan), t = tpan{i};   % ----- outer targ panel loop
   S.i(hh)=Si.i; S.j(hh)=Si.j; S.v(hh)=Si.v;
   hh = D.ptr+(1:Di.ptr); D.ptr=D.ptr+Di.ptr;  % inds in final sparse list
   D.i(hh)=Di.i; D.j(hh)=Di.j; D.v(hh)=Di.v;
+  hh = Sd.ptr+(1:Sdi.ptr); Sd.ptr=Sd.ptr+Sdi.ptr;  % inds in final sparse list
+  Sd.i(hh)=Sdi.i; Sd.j(hh)=Sdi.j; Sd.v(hh)=Sdi.v;
   roff = roff + t.N;
 end                                   % ------
-Sret = sparse(S.i,S.j,S.v,M,n*N);     % build whole matrix in one go
+Sret = sparse(S.i,S.j,S.v,M,n*N);     % build each matrix in one go
 Dret = sparse(D.i,D.j,D.v,M,n*N);
+Sdotret = sparse(Sd.i,Sd.j,Sd.v,M,n*N);
 
 % Notes: spreplace here was too slow:
 % https://www.mathworks.com/matlabcentral/answers/69528-sparse-matrix-more-efficient-assignment-operation
@@ -75,17 +84,18 @@ Dret = sparse(D.i,D.j,D.v,M,n*N);
 
 
 %%%%%%
-function [Sret Dret] = tdSDinterpmats_panelpair(t,s,o)
+function [Sret Dret Sdotret] = tdSDinterpmats_panelpair(t,s,o)
 % Inputs:
 % t - target panel struct with: t.x - 3xM target locs
 % s - source panel struct with: s.x, s.nx - 3xN locs and normal, s.w 1xN weights
 % o - interpolation info struct with fields: n (# history steps), dt, m.
 % Outputs:
-% Sret,Dret - M-by-Nn sparse matrices, each row of which is a vector to apply
-%             appropriately retarded SLP or DLP to density history vectors
-%             (ordered with time fast, nodes slow) for that row's target.
+% Sret,Dret,Sdotret - M-by-Nn sparse matrices, each row of which is a vector
+%             to apply appropriately retarded SLP, DLP, or SLP(d/dt .) to
+%             density history vectors (ordered with time fast, nodes slow) for
+%             that row's target.
 %             Thus these matrices can do true matvecs against dens history.
-% Barnett 12/29/16
+% Barnett 12/29/16. Sdot 1/6/17
 n = o.n;
 M = size(t.x,2); N = numel(s.w);        % # targs, # srcs
 [S D Dp] = tdSDmats(t.x,s.x,s.nx,s.w);  % spatial quadr mats, each is MxN
@@ -93,7 +103,7 @@ delays = dists(s.x,t.x);                % pt pairwise time delays >0, transpose
 [~,jmin,A,Ap] = interpmat(-delays(:),o.dt,o.m);  % Tom's weights (1 row per delay, ordered fast over sources, slow over targs)
 joff = jmin+o.n-1;         % padding on the ancient side
 if joff<0, error('interp requesting too ancient history!'); end
-ii = []; jj = []; aa = []; dd = [];  % to build the sparse mats
+ii = []; jj = []; aa = []; dd = []; aap = []; % to build the sparse mats
 for k=1:M     % loop over targs
   [j i a] = find(A((1:N)+(k-1)*N,:)');    % j is time inds, i is src inds (slow)
   aa = [aa; a.*S(k,i)'];                  % SLP spatial kernel & quadr wei
@@ -102,21 +112,26 @@ for k=1:M     % loop over targs
   jj = [jj; joff+j+n*(i-1)];              % time indices in the Nn vector
 end
 Sret = sparse(ii,jj,aa,M,N*n);
+aap = []; iip = []; jjp = [];
 for k=1:M     % loop over targs, now appending to i,j,val lists for deriv part:
-  [j i a] = find(Ap((1:N)+(k-1)*N,:)');   % j is time inds, i is src inds (slow)
-  dd = [dd; a.*Dp(k,i)'];                 % deriv part of DLP
-  ii = [ii; k*ones(size(a))];
+  [j i ap] = find(Ap((1:N)+(k-1)*N,:)');  % j is time inds, i is src inds (slow)
+  dd = [dd; ap.*Dp(k,i)'];                % deriv part of DLP
+  aap = [aap; ap.*S(k,i)'];               % SLP spatial acting on d/dt
+  ii = [ii; k*ones(size(ap))];
   jj = [jj; joff+j+n*(i-1)];              % time indices in the Nn vector
+  iip = [iip; k*ones(size(ap))];
+  jjp = [jjp; joff+j+n*(i-1)];              % time indices in the Nn vector
 end
 Dret = sparse(ii,jj,dd,M,N*n);            % may have different pattern from Sret
+Sdotret = sparse(iip,jjp,aap,M,N*n);
 % *** todo: find neater way to build this without repeating the find()... ?
-% (issue is want sparsity pattern that includes A and Ap)
+% (issue is want the sparsity pattern that includes both A and Ap)
 
 %%%%%
-function test_tdSDinterpmats_panels   % do off/on surf wave eqn GRF test,
-% taken from test_tdGRF_interp.  Barnett 1/1/17
+function test_tdSDinterpmats_panels   % do off/on surf wave eqn GRF S,D test,
+% taken from test_tdGRF_interp.  Barnett 1/1/17. Not doesn't test Sdot.
 side = 0;    %  GRF test:   1 ext, 0 on-surf
-bigtest = 1;   % use all pans as on-surf targs
+bigtest = 0;   % use all pans as on-surf targs (takes 2 mins)
 dt = 0.1;   % timestep
 m = 4;      % control time interp order (order actually m+2)
 
@@ -163,3 +178,7 @@ fprintf('N=%d, dens-interp ext GRF test: max u err = %.3g\n',N,max(abs(u-uex)))
 %keyboard
 
 % todo *** try speeding up appending in _panelpair() - not much effect now
+
+% todo: devise some test of Sdottarg, eg seeing if close to Starg applied to
+%  independently t-deriv'ed mu.
+
