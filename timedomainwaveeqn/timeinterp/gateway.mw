@@ -11,7 +11,8 @@
 % Outputs:
 % jmax    - maximum time index for interpolation data - <= 0 with current time 0
 % jmin    - minimum time index for interpolation data - <= 0 with current time 0
-% umat    - matrix of dimension r * (jmax-jmin+1) for u interpolation
+% umat    - matrix of dimension r * (jmax-jmin+1) for u interpolation, r is number of
+%           times in the tinterp input list.
 % upmat   - matrix of dimension r * (jmax-jmin+1) for du/dt interpolation
 %
 % Notes: MEX interface to code by Tom Hagstrom, July 2016.

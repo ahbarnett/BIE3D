@@ -41,6 +41,7 @@ for i=1:numel(hs), h = hs(i);      % -------------------- h convergence loop
   fprintf('h=%g  (points per wavelength = %.3g) :\n',h,2*pi/om/h)
   [~,jmin,umat,upmat] = interpmat(y,h,m);  % jmin is most ancient grid offset
   q = w*umat;     % add coeffs for each quadr node, scaled by its weight, row
+  size(q)
   % note: these q are same as Tom's buildcofs, excluding the identity u(t) term
   nend = round(Tend/h);                 % how far to evolve starting at n=0
   nn = jmin:nend; tt = h*nn;            % time indices, grid values
@@ -59,8 +60,8 @@ for i=1:numel(hs), h = hs(i);      % -------------------- h convergence loop
   u = 0*nn; u(known) = soln(tt(known));    % PRED-CORR: set up soln array
   we = extrap(m);                          % Tom's extrap weights, row
   for n=0:nend, j = n+1-jmin;
-    uextrap = we*u(j-numel(we):j-1)';
-    u(j) = f(j) - q*[u(j+jmin:j-1), uextrap]';         % predictor
+    uextrap = we*u(j-numel(we):j-1)';                  % predictor
+    u(j) = f(j) - q*[u(j+jmin:j-1), uextrap]';
     u(j) = u(j) - q(end)*(u(j)-uextrap);               % corrector
   end
   errs(2,i) = max(abs(u-utrue));
