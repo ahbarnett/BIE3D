@@ -3,12 +3,15 @@
 % Barnett 1/4/17-1/16/17, w/ Hagstrom, Greengard. 6/7/17 pred-corr.
 
 clear
-dt = 0.1;   % timestep
+dt = 0.05;   % timestep
 m = 4;      % control time interp order (order actually m+2)
-predcorr = 4;   % <0 for impl;  0,1,2, for pred-corr with that many corrector steps
+predcorr = -1;   % <0 for impl;  0,1,2, for pred-corr with that many corrector steps
 
 so.a=1; so.b=0.5; o.p=6;  % torus shape (a,b);  p = G-L nodes per panel side.
-[s N] = create_panels('torus',so,o); % surf: default # pans
+% find dt=0.1 unstable for (6,4) pans of p=12, even tho (12,8) @ p=6 stable.
+so.np=9; so.mp=6;    % panel numbers
+% need to do a joint study over h and dt to check stability
+[s N] = create_panels('torus',so,o); % surf
 [x nx w] = getallnodes(s);
 distmax = 6.0; %4.0;       % largest dist from anything to anything
 n = ceil(distmax/dt);
@@ -16,7 +19,7 @@ n = ceil(distmax/dt);
 if 1
 SDload = 0;   % if load, params must match the above!
 if SDload, disp('loading SD retarded history BIE matrices...')
-  load SDtarg_torus_p6_m4_dt01      % precomputed 2GB (took 80 sec)
+  load SDtarg_torus_p6_m4_dt005      % precomputed 2GB (took 80 sec)
 else
   o.nr = 8; o.nt = 2*o.nr;    % first add aux quad to panels: aux quad orders
   s = add_panels_auxquad(s,o);
@@ -57,7 +60,7 @@ mscs = [25 2 1.6 1.3];  % choice of max munows for color 3d plot
 
 % LOOP OVER VARIOUS REPRESENTATIONS (SETTING al,be)
 %for rep=1:4, al = mod(rep-1,2); be = rep>2; msc = mscs(rep);  %======= 1:4
-for rep=4, al = 1.0*mod(rep-1,2); be = 1.0*(rep>2); msc = mscs(rep);  %======= 1:4, new al,be
+for rep=4, al = 1.0*mod(rep-1,2); be = 2.0*(rep>2); msc = mscs(rep);  %======= 1:4, new al,be
 
 % Representation is u = D.mu + be.S.mu + al.S.mudot:
 %al = 1; be = 0;   % rep params, overridden by loop
