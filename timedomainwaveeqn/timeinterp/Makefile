@@ -6,7 +6,9 @@
 
 FC=gfortran
 FLIBS= -llapack -lblas          # for driver linking (see MEX libs/flags below)
-FFLAGS=-fPIC -O2
+#FFLAGS=-fPIC -O2
+# makes no difference...
+FFLAGS=-fPIC -O3 -march=native -funroll-loops
 
 # Change this to location of MATLAB's command line mex executable:
 # (For a Mac system, this is something of the form

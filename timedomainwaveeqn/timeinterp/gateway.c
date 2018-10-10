@@ -360,7 +360,7 @@ MWF77_RETURN MWF77_extrapnoalloc(double*, int*);
 } /* end extern C */
 #endif
 
-/* ---- gateway.mw: 30 ----
+/* ---- gateway.mw: 31 ----
  * interpmatnoalloc(int r, double[] tinterp, double dt, int m, output int[1] jmax, output int[1] jmin, inout double[] umat, inout double[] upmat, int maxinds);
  */
 const char* stubids1_ = "interpmatnoalloc(i int, i double[], i double, i int, o int[x], o int[x], io double[], io double[], i int)";
@@ -435,7 +435,7 @@ mw_err_label:
         mexErrMsgTxt(mw_err_txt_);
 }
 
-/* ---- gateway.mw: 53 ----
+/* ---- gateway.mw: 54 ----
  * extrapnoalloc(inout double[] xcof, int m);
  */
 const char* stubids2_ = "extrapnoalloc(io double[], i int)";
@@ -500,8 +500,8 @@ void mexFunction(int nlhs, mxArray* plhs[],
     } else if (strcmp(id, "*profile report*") == 0) {
         if (!mexprofrecord_)
             mexPrintf("Profiler inactive\n");
-        mexPrintf("%d calls to gateway.mw:30\n", mexprofrecord_[1]);
-        mexPrintf("%d calls to gateway.mw:53\n", mexprofrecord_[2]);
+        mexPrintf("%d calls to gateway.mw:31\n", mexprofrecord_[1]);
+        mexPrintf("%d calls to gateway.mw:54\n", mexprofrecord_[2]);
     } else if (strcmp(id, "*profile log*") == 0) {
         FILE* logfp;
         if (nrhs != 2 || mxGetString(prhs[1], id, sizeof(id)) != 0)
@@ -511,8 +511,8 @@ void mexFunction(int nlhs, mxArray* plhs[],
             mexErrMsgTxt("Cannot open log for output");
         if (!mexprofrecord_)
             fprintf(logfp, "Profiler inactive\n");
-        fprintf(logfp, "%d calls to gateway.mw:30\n", mexprofrecord_[1]);
-        fprintf(logfp, "%d calls to gateway.mw:53\n", mexprofrecord_[2]);
+        fprintf(logfp, "%d calls to gateway.mw:31\n", mexprofrecord_[1]);
+        fprintf(logfp, "%d calls to gateway.mw:54\n", mexprofrecord_[2]);
         fclose(logfp);
     } else
         mexErrMsgTxt("Unknown identifier");

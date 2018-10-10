@@ -95,43 +95,41 @@ function [Sret Dret Sdotret] = tdSDinterpmats_panelpair(t,s,o)
 %             density history vectors (ordered with time fast, nodes slow) for
 %             that row's target.
 %             Thus these matrices can do true matvecs against dens history.
-% Barnett 12/29/16. Sdot 1/6/17
+% Barnett 12/29/16. Sdot 1/6/17. Removed appending to lists & find 10/10/18
 n = o.n;
 M = size(t.x,2); N = numel(s.w);        % # targs, # srcs
 [S D Dp] = tdSDmats(t.x,s.x,s.nx,s.w);  % spatial quadr mats, each is MxN
 delays = dists(s.x,t.x);                % pt pairwise time delays >0, transpose
-[~,jmin,A,Ap] = interpmat(-delays(:),o.dt,o.m);  % Tom's weights (1 row per delay, ordered fast over sources, slow over targs)
-joff = jmin+o.n-1;         % padding on the ancient side
+[~,jmin,A,Ap] = interpmat(-delays(:),o.dt,o.m);  % Tom's weights (1 col per delay, row ordering fast over sources, slow over targs)
+joff = jmin+o.n-1;                      % padding on the ancient side
 if joff<0, error('interp requesting too ancient history!'); end
-ii = []; jj = []; aa = []; dd = []; aap = []; % to build the sparse mats
-for k=1:M     % loop over targs
-  [j i a] = find(A((1:N)+(k-1)*N,:)');    % j is time inds, i is src inds (slow)
-  aa = [aa; a.*S(k,i)'];                  % SLP spatial kernel & quadr wei
-  dd = [dd; a.*D(k,i)'];                  % value part of DLP
-  ii = [ii; k*ones(size(a))];
-  jj = [jj; joff+j+n*(i-1)];              % time indices in the Nn vector
+% get j (time) & i (src-targ pair) inds of all nonzero els...
+[jj ii] = find(abs(A')+abs(Ap')>1e-12); % joint sparsity. transp for ii contig
+aa = A(sub2ind(size(A),ii,jj));         % get all interp mat el vals
+aap = Ap(sub2ind(size(A),ii,jj));
+dd = 0*aa;
+ir = 0*ii; jr = ir;                     % ind lists for retarted M*Nn mats
+brk = [0; find(diff(floor((ii-1)/N))); numel(ii)];  % ind breakpts btw targs
+for k=1:M                               % loop over targs
+  i = (brk(k)+1 : brk(k+1))';           % col of inds of sparse inds for kth targ
+  %i = find(ii>(k-1)*N & ii<=k*N)       % (same math, was slower)
+  iii = ii(i)-(k-1)*N;                  % indices of src nodes
+  dd(i) = aa(i).*D(k,iii)' + aap(i).*Dp(k,iii)';  % value & deriv parts of DLP
+  % (NB since we're done with aa and aap for DLP, can now change them!)
+  aa(i) = aa(i).*S(k,iii)';             % SLP spatial kernel & quadr wei
+  aap(i) = aap(i).*S(k,iii)';           % SLP spatial acting on d/dt dens
+  ir(i) = k;                            % all same targ index for ret mats
+  jr(i) = joff+jj(i)+n*(iii-1);         % time indices within the Nn vector
 end
-Sret = sparse(ii,jj,aa,M,N*n);
-aap = []; iip = []; jjp = [];
-for k=1:M     % loop over targs, now appending to i,j,val lists for deriv part:
-  [j i ap] = find(Ap((1:N)+(k-1)*N,:)');  % j is time inds, i is src inds (slow)
-  dd = [dd; ap.*Dp(k,i)'];                % deriv part of DLP
-  aap = [aap; ap.*S(k,i)'];               % SLP spatial acting on d/dt
-  ii = [ii; k*ones(size(ap))];
-  jj = [jj; joff+j+n*(i-1)];              % time indices in the Nn vector
-  iip = [iip; k*ones(size(ap))];
-  jjp = [jjp; joff+j+n*(i-1)];              % time indices in the Nn vector
-end
-Dret = sparse(ii,jj,dd,M,N*n);            % may have different pattern from Sret
-Sdotret = sparse(iip,jjp,aap,M,N*n);
-% *** todo: find neater way to build this without repeating the find()... ?
-% (issue is want the sparsity pattern that includes both A and Ap)
+Sret = sparse(ir,jr,aa,M,N*n);
+Sdotret = sparse(ir,jr,aap,M,N*n);
+Dret = sparse(ir,jr,dd,M,N*n);
 
 %%%%%
 function test_tdSDinterpmats_panels   % do off/on surf wave eqn GRF S,D test,
 % taken from test_tdGRF_interp.  Barnett 1/1/17. Not doesn't test Sdot.
 side = 0;    %  GRF test:   1 ext, 0 on-surf
-bigtest = 0;   % use all pans as on-surf targs (takes 2 mins)
+bigtest = 1;   % use all pans as on-surf targs (takes 2 mins)
 dt = 0.1;   % timestep
 m = 4;      % control time interp order (order actually m+2)
 
@@ -161,9 +159,9 @@ xx = kron(x,ones(1,n)); nxx = kron(nx,ones(1,n));   % ttt,xx,nxx spacetime list
 [f,fn] = data_ptsrc(xs,T,Tt,ttt,xx,nxx);       % output ft unused
 sighist = -fn; tauhist = f;  % col vecs, ext wave eqn GRF: u = D.u - S.un
 
-tic, %profile clear; profile on
+tic, profile clear; profile on
 [Starg,Dtarg] = tdSDinterpmats_panels(t,s,Linfo,struct('n',n,'dt',dt,'m',m));
-toc, %profile off; profile viewer
+toc, profile off; profile viewer
 
 %[ii jj] = find(Dtarg); numel(ii)/prod(size(Dtarg)) % check sparsity
 % tic, [ii jj aa] = find(Dtarg); toc % timing test
@@ -176,8 +174,6 @@ fprintf('N=%d, dens-interp ext GRF test: max u err = %.3g\n',N,max(abs(u-uex)))
 %u, uex
 %whos   % 10MB, 1 sec per pan -> 1GB, 1 min for whole surf.
 %keyboard
-
-% todo *** try speeding up appending in _panelpair() - not much effect now
 
 % todo: devise some test of Sdottarg, eg seeing if close to Starg applied to
 %  independently t-deriv'ed mu.

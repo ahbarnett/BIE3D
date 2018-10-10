@@ -26,7 +26,7 @@ DO m=2,12,2
 !
 ! choose a bunch of points in 3 time steps
 !
-  DO kloc=0,314,314 
+  DO kloc=0,314,314
 !
   tloc=-dt*DBLE(kloc)
 !
