@@ -1,7 +1,7 @@
 function h = showsurffunc(s, f, o)
 % SHOWSURFFUNC   show real-valued vector on surface (torus-like for now)
 %
-% h = showsurffunc(s, f, sc, o)
+% h = showsurffunc(s, f, o)
 % Inputs:
 %  s = cell array of quad panels (only torus-like surface for now)
 %  f = list of real function values on the nodes s.x.

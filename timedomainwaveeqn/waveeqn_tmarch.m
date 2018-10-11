@@ -3,7 +3,7 @@
 % Barnett 1/4/17-1/16/17, w/ Hagstrom, Greengard. 6/7/17 pred-corr.
 
 clear
-dt = 0.05;   % timestep
+dt = 0.1;   % timestep
 m = 4;      % control time interp order (order actually m+2)
 predcorr = -1;   % <0 for impl;  0,1,2, for pred-corr with that many corrector steps
 

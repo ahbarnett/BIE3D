@@ -4,11 +4,15 @@ function [pan N] = create_panels(shape,so,o)
 % [pan N] = create_panels(shape,shapeopts,convopts)
 %  Creates struct array of panels with their quadrature nodes for unknowns
 %
-% eg shape = 'torus':    shapeopts has fields a (major radius), b (minor rad),
+%  shape = 'torus':    shapeopts has fields a (major radius), b (minor rad),
 %                        mp (# panels small circ), np (# pan big circ).
 %                        mp * np panels are ordered in incr theta (i) fast,
 %                        incr phi (j) slow  (ie flipud of matrix ordering).
-%                        Dof ordering within panels is same (y fast, x slow)
+%                        Dof ordering within panels is same (y fast, x slow).
+%                   If b is a cell array of 3 function handles, interpreted as
+%                   { b(theta,phi), b_theta(theta,phi), and b_phi(theta,phi },
+%                   a minor radius function over theta and phi in [0,2pi), and
+%                   its correct partials.
 %
 % Output
 %  N : total number of unknowns
@@ -35,7 +39,7 @@ function [pan N] = create_panels(shape,so,o)
 %        topo - topology, eg 'torus'
 
 % Barnett 7/11/15. restarted 7/14/16, swapped np & mp 7/18/16
-% 12/29/30 neix1.
+% 12/29/16 neix1. torus allowed wobbly 10/10/18.
 
 % future ideas:
 % *** why not make just the surf pts be input, and derive all geom

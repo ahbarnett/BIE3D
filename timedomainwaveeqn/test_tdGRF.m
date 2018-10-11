@@ -3,7 +3,19 @@
 % Barnett 12/15/16
 
 clear
-so.a=1; so.b = 0.5; o.p = 6;
+wobbly = 1;
+so.a = 1; b = 0.5;   % major radius and poloidal radius
+o.p = 6;   % panel order
+if ~wobbly  % plain torus
+  so.b =b;
+else
+  wc = 0.1;  % surf modulation ampl
+  wm = 3;   % # wobbles in minor, poloidal (note swapped from 2013)
+  wn = 5;   % # wobbles in toroidal, major
+  f = @(t,p) b + wc*cos(wm*t+wn*p);         % wobble func, then its partials...
+  ft = @(t,p) -wc*wm*sin(wm*t+wn*p); fp = @(t,p) -wc*wn*sin(wm*t+wn*p);
+  so.b = {f,ft,fp};     % pass in instead of b param
+end
 [s N] = create_panels('torus',so,o); % surf: default # pans
 
 % surf data...

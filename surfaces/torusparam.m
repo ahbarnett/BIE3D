@@ -1,21 +1,36 @@
 function [x nx sp dp dt] = torusparam(a,b,p,t,o)
 % TORUSPARAM - return coords, unit normal and speed at params (phi,theta)
 %
-% [x nx sp dp dt] = torusparam(a,b,p,t)  p,t should be row vectors
-%  1st coord (phi) goes CCW (viewed from above) around big circle
-%  2nd coord (theta) takes up around little circle
-% (dp,dt,normal) form a RH coord sys.
+% [x nx sp dp dt] = torusparam(a,b,p,t).
+%  Inputs:
+%  p,t are phi and theta, and should be row vectors if multiple points wanted
+%  a is major radius
+%  b is minor radius.
+%    If b is a cell array of 3 function handles, is interpreted as b(t,p),
+%    a minor (poloidal) radius function over theta and phi each in [0,2pi),
+%    and b_t(t,p), b_p(t,p) its correct partials. Or, see below option.
+%
+% Geometry:
+%  1st coord (phi) goes CCW (viewed from above) around big circle, toroidal
+%  2nd coord (theta) takes up around little circle, poloidal
+% (dp,dt,outwardsnormal) form a RH coord sys.
 %
 % sp = dp * dt
 % dt is magnitude of dr/dt vector; dp mag of dr/dp vector.
 %
 % [x nx sp dp dt] = torusparam(a,b,p,t,o) allows opts eg
-% o.f, o.fp, o.ft handles to modulation func (poloidal radius), and partials
+% o.f, o.fp, o.ft handles to modulation func (poloidal radius vs theta,phi),
+% and its partials, which must be correct.
 
-% adapted from Barnett 2013 except made outward normal dphi cross dtheta
+% adapted from Barnett 2013 except made outward normal dphi cross dtheta.
+% expanded modulation interface 10/10/18.
 
-if nargin>4       % wobbly torus
-  f = o.f; ft = o.ft; fp = o.fp;
+if nargin>4 || iscell(b)       % wobbly torus
+  if iscell(b)    % allow a new interface to wobbly modulation
+    f = b{1}; ft = b{2}; fp = b{3};
+  else
+    f = o.f; ft = o.ft; fp = o.fp;
+  end
   r = @(t,p) [(a+f(t,p).*cos(t)).*cos(p); (a+f(t,p).*cos(t)).*sin(p); f(t,p).*sin(t)]; % t,p rows
   rt = @(t,p) [(-f(t,p).*sin(t) + ft(t,p).*cos(t)).*cos(p); (-f(t,p).*sin(t)+ft(t,p).*cos(t)).*sin(p); f(t,p).*cos(t)+ft(t,p).*sin(t)]; % partial
   rp = @(t,p) [-(a+f(t,p).*cos(t)).*sin(p)+fp(t,p).*cos(t).*cos(p); (a+f(t,p).*cos(t)).*cos(p) + fp(t,p).*cos(t).*sin(p); fp(t,p).*sin(t)];

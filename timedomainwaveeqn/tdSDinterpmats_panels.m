@@ -74,10 +74,21 @@ for i=1:numel(tpan), t = tpan{i};   % ----- outer targ panel loop
   Sd.i(hh)=Sdi.i; Sd.j(hh)=Sdi.j; Sd.v(hh)=Sdi.v;
   roff = roff + t.N;
 end                                   % ------
-Sret = sparse(S.i,S.j,S.v,M,n*N);     % build each matrix in one go
-Dret = sparse(D.i,D.j,D.v,M,n*N);
-Sdotret = sparse(Sd.i,Sd.j,Sd.v,M,n*N);
-
+if exist('fsparse')~=3
+  t=tic;
+  Sret = sparse(S.i,S.j,S.v,M,n*N);     % build each matrix in one go
+  Dret = sparse(D.i,D.j,D.v,M,n*N);
+  Sdotret = sparse(Sd.i,Sd.j,Sd.v,M,n*N);
+  fprintf('matlab sparse build: %.3g s\n',toc(t))
+else
+  t=tic;   % attempt to speed up w/ multithreaded stenglib/Fast/fsparse MEX :
+  % it's possible 'nosort' speeds up build or spmatvec when added here...
+  Sret = fsparse(S.i,S.j,S.v,[M,n*N,numel(S.i)]);  % build each matrix in one go
+  Dret = fsparse(D.i,D.j,D.v,[M,n*N,numel(D.i)]);
+  Sdotret = fsparse(Sd.i,Sd.j,Sd.v,[M,n*N,numel(Sd.i)]);
+  fprintf('stenglib fsparse build: %.3g s\n',toc(t))
+end
+  
 % Notes: spreplace here was too slow:
 % https://www.mathworks.com/matlabcentral/answers/69528-sparse-matrix-more-efficient-assignment-operation
 % Also, repeated append too slow
@@ -124,12 +135,16 @@ end
 Sret = sparse(ir,jr,aa,M,N*n);
 Sdotret = sparse(ir,jr,aap,M,N*n);
 Dret = sparse(ir,jr,dd,M,N*n);
+% stenglib no faster than matlab, maybe since already ir-incr sorted order:
+%Sret = fsparse(ir,jr,aa,[M,N*n,numel(ir)]);
+%Sdotret = fsparse(ir,jr,aap,[M,N*n,numel(ir)]);
+%Dret = fsparse(ir,jr,dd,[M,N*n,numel(ir)]);
 
 %%%%%
 function test_tdSDinterpmats_panels   % do off/on surf wave eqn GRF S,D test,
 % taken from test_tdGRF_interp.  Barnett 1/1/17. Not doesn't test Sdot.
 side = 0;    %  GRF test:   1 ext, 0 on-surf
-bigtest = 1;   % use all pans as on-surf targs (takes 2 mins)
+bigtest = 0;   % use all pans as on-surf targs (takes 2 mins)
 dt = 0.1;   % timestep
 m = 4;      % control time interp order (order actually m+2)
 
@@ -145,7 +160,7 @@ if side==1
 else
   o.nr = 8; o.nt = 2*o.nr;     % first add aux quad to panels: aux quad orders
   s = add_panels_auxquad(s,o);
-  if bigtest, t = s; else t = s{57}; end  % on-surf targ, 1 or more pans
+  if bigtest, t = s; else t = s{57}; end % on-surf targ, 1 or more pans s(57:86)
   Linfo = setup_auxinterp(s{1}.t,o);  % std spatial interp to aux quad
 end
 ttarg = 0.0;          % test target time (avoids "t" panel field conflict)
@@ -157,11 +172,11 @@ xs = [0.9;-0.2;0.1];   % src pt for data, must be inside
 tt = dt*(-n+1:0); ttt = repmat(tt,[1 N]);
 xx = kron(x,ones(1,n)); nxx = kron(nx,ones(1,n));   % ttt,xx,nxx spacetime list
 [f,fn] = data_ptsrc(xs,T,Tt,ttt,xx,nxx);       % output ft unused
-sighist = -fn; tauhist = f;  % col vecs, ext wave eqn GRF: u = D.u - S.un
+sighist = -fn; tauhist = f;    % col vecs, ext wave eqn GRF: u = D.u - S.un
 
-tic, profile clear; profile on
+t0=tic; %profile clear; profile on
 [Starg,Dtarg] = tdSDinterpmats_panels(t,s,Linfo,struct('n',n,'dt',dt,'m',m));
-toc, profile off; profile viewer
+fprintf('total build time %.3g s\n',toc(t0)), %profile off; profile viewer
 
 %[ii jj] = find(Dtarg); numel(ii)/prod(size(Dtarg)) % check sparsity
 % tic, [ii jj aa] = find(Dtarg); toc % timing test
@@ -172,9 +187,9 @@ uex = data_ptsrc(xs,T,Tt,ttarg,xtarg);     % what ext GRF should give
 if side==0, uex=uex/2; end   % on-surf principal value
 fprintf('N=%d, dens-interp ext GRF test: max u err = %.3g\n',N,max(abs(u-uex)))
 %u, uex
-%whos   % 10MB, 1 sec per pan -> 1GB, 1 min for whole surf.
+%whos   % 30MB, 0.6 sec per pan -> 3GB, 1 min for whole surf.
 %keyboard
 
 % todo: devise some test of Sdottarg, eg seeing if close to Starg applied to
-%  independently t-deriv'ed mu.
+% independently t-deriv'ed mu.
 
