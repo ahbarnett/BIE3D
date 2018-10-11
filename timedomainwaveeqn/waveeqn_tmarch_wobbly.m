@@ -4,7 +4,7 @@
 % wobbly torus geom, 10/10/18.
 
 clear
-dt = 0.1;   % timestep
+dt = 0.05;   % timestep
 m = 4;      % control time interp order (order actually m+2)
 predcorr = -1;   % <0 for impl;  0,1,2, for pred-corr with that many corrector steps
 wobbly = 1;
@@ -29,15 +29,19 @@ distmax = 6.0; %4.0;       % largest dist from anything to anything
 n = ceil(distmax/dt);
 
 if 1
-SDload = 1;   % if load, params must match the above!
+SDload = 0;   % if load, params must match the above!
 if SDload, disp('loading SD retarded history BIE matrices...')
   load SDtarg_wtorus_p6_m6_dt01      % precomputed 2GB (took 80 sec)
 else
   o.nr = 8; o.nt = 2*o.nr;    % first add aux quad to panels: aux quad orders
   s = add_panels_auxquad(s,o);
   Linfo = setup_auxinterp(s{1}.t,o);  % std spatial interp to aux quad
+  %profile clear; profile on
+  t0=tic;
   [Starg,Dtarg,Sdottarg] = tdSDinterpmats_panels(s,s,Linfo,struct('n',n,'dt',dt,'m',m));
-  disp('saving...'), save SDtarg_wtorus_p6_m6_dt01 Starg Dtarg Sdottarg -v7.3
+  fprintf('tot S,D,Sdot mat build (each %dx%d, nnz=%d): %.3g s\n',size(Starg,1),size(Starg,2),nnz(Starg),toc(t0))
+  %profile off; profile viewer
+  %disp('saving...'), save SDtarg_wtorus_p6_m6_dt01 Starg Dtarg Sdottarg -v7.3
 end
 end
 
@@ -100,7 +104,7 @@ t0=6; s0=1.0; T = @(t) 5*exp(-0.5*(t-t0).^2/s0^2); Tt = @(t) -((t-t0)/s0^2).*T(t
 
 Ttot = 18.0;     % total time to evolve
 jtot = ceil(Ttot/dt); 
-verb = 3;    % 0: text only, 1: final plot, 2: anim, 3: save movie
+verb = 1;    % 0: text only, 1: final plot, 2: anim, 3: save movie
 muhist = zeros(n*N,1);  % init dens hist
 gs=nan(jtot,1); rs=gs; ms=gs; es=gs;   % to save sizes of things for later
 nam=sprintf('wtorus_p%d_m%d_dt01_pulse_al%gbe%g_march',o.p,m,al,be);

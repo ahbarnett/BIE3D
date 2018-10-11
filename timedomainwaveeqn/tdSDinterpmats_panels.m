@@ -19,7 +19,7 @@ function [Sret Dret Sdotret] = tdSDinterpmats_panels(tpan,span,Linfo,intinfo)
 %
 % See also: TEST_TDGRF_INTERP.m which is an older driver (near bottom).
 
-% Barnett 12/29/16 - 1/4/17. Sdotret 1/7/17
+% Barnett 12/29/16 - 1/4/17. Sdotret 1/7/17. parfor 10/11/18
 if nargin==0, test_tdSDinterpmats_panels; return; end
 
 if numel(tpan)==1, tpan = {tpan}; end
@@ -27,14 +27,13 @@ M = size(getallnodes(tpan),2);          % # target nodes
 if numel(span)==1, span = {span}; end
 N = size(getallnodes(span),2);          % # source nodes
 n = intinfo.n;
-S.i = []; S.j = []; S.v = []; S.ptr = 0; D = S; Sd = S;         % sparse lists
-roff = 0;                           % track roww offset in sparse mat out
-for i=1:numel(tpan), t = tpan{i};   % ----- outer targ panel loop
-  fprintf('targ pan #%d...\n',i)
+Si = cell(numel(tpan),1); Di = Si; Sdi = Si;  % cell array of structs, for parfor
+parfor i=1:numel(tpan), t = tpan{i};   % ----- outer targ panel loop
+  fprintf('targ pan #%d...\n',i)       % (tweaked so each i is indep task)
   coff = 0;                           % track column offset for sparse mat out
   nnzmax = ceil(20*N);                % allocation size for Si,Di targ-pan NNZ
-  Si.i = nan(nnzmax,1); Si.j = Si.i; Si.v = Si.i; Si.ptr = 0;
-  Di = Si; Sdi = Si;
+  Si{i}.i = nan(nnzmax,1); Si{i}.j = Si{i}.i; Si{i}.v = Si{i}.i; Si{i}.ptr = 0;
+  Di{i} = Si{i}; Sdi{i} = Si{i};
   for q=1:numel(span), s = span{q};   % loop over src pans in right order
     r = relatedpanel(t,s);
     if r==0    % s is unrelated, ie far from t
@@ -43,50 +42,62 @@ for i=1:numel(tpan), t = tpan{i};   % ----- outer targ panel loop
       nN = s.N*n;
       Sq = nan(t.N,nN); Dq = Sq; Sdq = Sq;
       for j=1:t.N             % loop over targs and write each as row of Sq
+        tj = struct();
         tj.x = t.x(:,j); tj.N = 1;    % this targ pt as own struct
-        i = Linfo.auxindsbytarg{r}{j};  % indices in full list of aux nodes
-        saux.x = t.auxnodes(:,i);   % here i indexes the last 2 dims naux*N
-        saux.nx = t.auxnormals(:,i);
-        saux.w = t.auxwei(i);
-        saux.N = numel(saux.w);
-        [Sa Da Sda] = tdSDinterpmats_panelpair(tj,saux,intinfo);  % saux as src pan
+        k = Linfo.auxindsbytarg{r}{j};  % indices in full list of aux nodes
+        saux = struct();
+        saux.x = t.auxnodes(:,k);   % here i indexes the last 2 dims naux*N
+        saux.nx = t.auxnormals(:,k);
+        saux.w = t.auxwei(k);
+        saux.N = numel(saux.w);         % we now use saux as src pan...
+        [Sa Da Sda] = tdSDinterpmats_panelpair(tj,saux,intinfo);
         Ltjsaux = Linfo.Lbytarg{r}{j};     % see: setup_auxinterp
         Sq(j,:) = reshape(reshape(Sa,[n saux.N]) * Ltjsaux, [1 nN]);
         Dq(j,:) = reshape(reshape(Da,[n saux.N]) * Ltjsaux, [1 nN]);
         Sdq(j,:) = reshape(reshape(Sda,[n saux.N]) * Ltjsaux, [1 nN]);
       end
     end
-    %  dump each src blk into sparse lists for this targ panel...
-    [ii jj vv] = find(Sq); nh=numel(ii); hh = Si.ptr+(1:nh); Si.ptr = Si.ptr+nh;
-    Si.i(hh) = ii+roff;  Si.j(hh) = jj+coff;  Si.v(hh) = vv;
-    [ii jj vv] = find(Dq); nh=numel(ii); hh = Di.ptr+(1:nh); Di.ptr = Di.ptr+nh;
-    Di.i(hh) = ii+roff;  Di.j(hh) = jj+coff;  Di.v(hh) = vv;
-    [ii jj vv] = find(Sdq); nh=numel(ii); hh = Sdi.ptr+(1:nh); Sdi.ptr = Sdi.ptr+nh;
-    Sdi.i(hh) = ii+roff;  Sdi.j(hh) = jj+coff;  Sdi.v(hh) = vv;
+    %  dump each src blk into sparse lists for this i'th targ panel...
+    [ii jj vv] = find(Sq); nh=numel(ii); hh = Si{i}.ptr+(1:nh); Si{i}.ptr = Si{i}.ptr+nh;
+    Si{i}.i(hh) = ii;  Si{i}.j(hh) = jj+coff;  Si{i}.v(hh) = vv;
+    [ii jj vv] = find(Dq); nh=numel(ii); hh = Di{i}.ptr+(1:nh); Di{i}.ptr = Di{i}.ptr+nh;
+    Di{i}.i(hh) = ii;  Di{i}.j(hh) = jj+coff;  Di{i}.v(hh) = vv;
+    [ii jj vv] = find(Sdq); nh=numel(ii); hh = Sdi{i}.ptr+(1:nh); Sdi{i}.ptr = Sdi{i}.ptr+nh;
+    Sdi{i}.i(hh) = ii;  Sdi{i}.j(hh) = jj+coff;  Sdi{i}.v(hh) = vv;
     coff = coff + size(Sq,2);
   end
+end                                % ------
+
+t0=tic;
+S.i = []; S.j = []; S.v = []; S.ptr = 0; D = S; Sd = S;  % full sparse lists
+roff = 0;                           % track row offset in sparse mat out
+% *** build roff first.
+% make parfor do indep steps...
+for i=1:numel(tpan)          % copy each targ pan into full sparse lists...
   % dump each targ blk row into sparse lists... (don't append; too slow!)
-  hh = S.ptr+(1:Si.ptr); S.ptr=S.ptr+Si.ptr;  % inds in final sparse list
-  S.i(hh)=Si.i; S.j(hh)=Si.j; S.v(hh)=Si.v;
-  hh = D.ptr+(1:Di.ptr); D.ptr=D.ptr+Di.ptr;  % inds in final sparse list
-  D.i(hh)=Di.i; D.j(hh)=Di.j; D.v(hh)=Di.v;
-  hh = Sd.ptr+(1:Sdi.ptr); Sd.ptr=Sd.ptr+Sdi.ptr;  % inds in final sparse list
-  Sd.i(hh)=Sdi.i; Sd.j(hh)=Sdi.j; Sd.v(hh)=Sdi.v;
-  roff = roff + t.N;
-end                                   % ------
-if exist('fsparse')~=3
-  t=tic;
+  hh = S.ptr+(1:Si{i}.ptr); S.ptr=S.ptr+Si{i}.ptr;  % inds in final sparse list
+  S.i(hh)=Si{i}.i+roff; S.j(hh)=Si{i}.j; S.v(hh)=Si{i}.v;
+  hh = D.ptr+(1:Di{i}.ptr); D.ptr=D.ptr+Di{i}.ptr;  % inds in final sparse list
+  D.i(hh)=Di{i}.i+roff; D.j(hh)=Di{i}.j; D.v(hh)=Di{i}.v;
+  hh = Sd.ptr+(1:Sdi{i}.ptr); Sd.ptr=Sd.ptr+Sdi{i}.ptr;  % inds in final sparse list
+  Sd.i(hh)=Sdi{i}.i+roff; Sd.j(hh)=Sdi{i}.j; Sd.v(hh)=Sdi{i}.v;
+  roff = roff + tpan{i}.N;
+end
+fprintf('stack cells into single sparse lists: %.3g s\n',toc(t0))
+
+if exist('fsparse')~=3  % unlike panelpair case, matlab assemble can be beaten:
+  t0=tic;
   Sret = sparse(S.i,S.j,S.v,M,n*N);     % build each matrix in one go
   Dret = sparse(D.i,D.j,D.v,M,n*N);
   Sdotret = sparse(Sd.i,Sd.j,Sd.v,M,n*N);
-  fprintf('matlab sparse build: %.3g s\n',toc(t))
+  fprintf('matlab sparse build: %.3g s\n',toc(t0))
 else
-  t=tic;   % attempt to speed up w/ multithreaded stenglib/Fast/fsparse MEX :
-  % it's possible 'nosort' speeds up build or spmatvec when added here...
+  t0=tic;   % speed up w/ multithreaded stenglib/Fast/fsparse.c MEX :
+  % it's possible 'nosort' speeds up build or spmatvec when added here... (nope)
   Sret = fsparse(S.i,S.j,S.v,[M,n*N,numel(S.i)]);  % build each matrix in one go
   Dret = fsparse(D.i,D.j,D.v,[M,n*N,numel(D.i)]);
   Sdotret = fsparse(Sd.i,Sd.j,Sd.v,[M,n*N,numel(Sd.i)]);
-  fprintf('stenglib fsparse build: %.3g s\n',toc(t))
+  fprintf('stenglib fsparse build: %.3g s\n',toc(t0))
 end
   
 % Notes: spreplace here was too slow:
@@ -132,13 +143,15 @@ for k=1:M                               % loop over targs
   ir(i) = k;                            % all same targ index for ret mats
   jr(i) = joff+jj(i)+n*(iii-1);         % time indices within the Nn vector
 end
-Sret = sparse(ir,jr,aa,M,N*n);
-Sdotret = sparse(ir,jr,aap,M,N*n);
-Dret = sparse(ir,jr,dd,M,N*n);
-% stenglib no faster than matlab, maybe since already ir-incr sorted order:
-%Sret = fsparse(ir,jr,aa,[M,N*n,numel(ir)]);
-%Sdotret = fsparse(ir,jr,aap,[M,N*n,numel(ir)]);
-%Dret = fsparse(ir,jr,dd,[M,N*n,numel(ir)]);
+if 1 | exist('fsparse')~=3    % native assemble - is fastest, always use
+  Sret = sparse(ir,jr,aa,M,N*n);
+  Sdotret = sparse(ir,jr,aap,M,N*n);
+  Dret = sparse(ir,jr,dd,M,N*n);
+else % stenglib, is strangely 3x slower than matlab here, so don't use.
+  Sret = fsparse(ir,jr,aa,[M,N*n,numel(ir)]);
+  Sdotret = fsparse(ir,jr,aap,[M,N*n,numel(ir)]);
+  Dret = fsparse(ir,jr,dd,[M,N*n,numel(ir)]);
+end
 
 %%%%%
 function test_tdSDinterpmats_panels   % do off/on surf wave eqn GRF S,D test,
