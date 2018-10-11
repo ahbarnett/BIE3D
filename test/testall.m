@@ -9,6 +9,7 @@ tensorprod_interp
 
 % surfaces
 create_panels
+test_wobblytorus
 
 % singquad
 panel_sing_auxquad
