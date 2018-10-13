@@ -71,15 +71,13 @@ end                                % ------
 t0=tic;
 S.i = []; S.j = []; S.v = []; S.ptr = 0; D = S; Sd = S;  % full sparse lists
 roff = 0;                           % track row offset in sparse mat out
-% *** build roff first.
-% make parfor do indep steps...
-for i=1:numel(tpan)          % copy each targ pan into full sparse lists...
+for i=1:numel(tpan)  % copy each targ pan into full sparse lists...(use parfor?)
   % dump each targ blk row into sparse lists... (don't append; too slow!)
   hh = S.ptr+(1:Si{i}.ptr); S.ptr=S.ptr+Si{i}.ptr;  % inds in final sparse list
   S.i(hh)=Si{i}.i+roff; S.j(hh)=Si{i}.j; S.v(hh)=Si{i}.v;
-  hh = D.ptr+(1:Di{i}.ptr); D.ptr=D.ptr+Di{i}.ptr;  % inds in final sparse list
+  hh = D.ptr+(1:Di{i}.ptr); D.ptr=D.ptr+Di{i}.ptr;  % "
   D.i(hh)=Di{i}.i+roff; D.j(hh)=Di{i}.j; D.v(hh)=Di{i}.v;
-  hh = Sd.ptr+(1:Sdi{i}.ptr); Sd.ptr=Sd.ptr+Sdi{i}.ptr;  % inds in final sparse list
+  hh = Sd.ptr+(1:Sdi{i}.ptr); Sd.ptr=Sd.ptr+Sdi{i}.ptr; % "
   Sd.i(hh)=Sdi{i}.i+roff; Sd.j(hh)=Sdi{i}.j; Sd.v(hh)=Sdi{i}.v;
   roff = roff + tpan{i}.N;
 end

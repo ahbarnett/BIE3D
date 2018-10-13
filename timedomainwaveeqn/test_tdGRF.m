@@ -16,21 +16,26 @@ else
   ft = @(t,p) -wc*wm*sin(wm*t+wn*p); fp = @(t,p) -wc*wn*sin(wm*t+wn*p);
   so.b = {f,ft,fp};     % pass in instead of b param
 end
+so.np = 12; so.mp = 8;  % default
+%so.np = 18; so.mp = 12;
+%so.np = 9; so.mp = 6;
 [s N] = create_panels('torus',so,o); % surf: default # pans
 
 % surf data...
 %t0 = 1.0; T = @(t) exp(-(t/t0).^2/2); Tt = @(t) (-t/t0^2).*T(t); % data t-func
 w0 = 2.0; T = @(t) cos(w0*t); Tt = @(t) -w0*sin(w0*t);
-eps = 1e-5; t = 0.3;       % test time
-fprintf('error in time deriv: %.3g\n',(T(t+eps)-T(t-eps))/(2*eps) - Tt(t))
-clear t
-xs = [0.9;-0.2;0.1];   % src pt for data, must be inside
+Tfunctest = 0; if Tfunctest
+  eps = 1e-5; t = 0.3;       % test time
+  fprintf('error in time deriv: %.3g\n',(T(t+eps)-T(t-eps))/(2*eps) - Tt(t))
+  clear t
+end
+xs = [0.9;-0.2;0.1];   % src pt for data, must be well inside
 
 side = 0;  % -1,0,1: choose nature of GRF test pt (a fake 1-pt panel)
 
 if side==1, t.x = [1.3;0.1;0.8];          % exterior...
-elseif side==-1, t.x = [-.8;.1;.2];       % or interior
-else, k=57;j=1; t.x = s{k}.x(:,j); end    % or on-surf
+elseif side==-1, t.x = [-.8;-.3;.2];       % or interior
+else, k=17;j=1; t.x = s{k}.x(:,j); end    % or on-surf
 t.N = 1; ttarg = 2.1;              % test target time (avoid s.t conflict)
 [x nx w] = getallnodes(s);
 tret = ttarg - dists(t.x,x);   % retarded times on surf rel to GRF test pt
@@ -39,8 +44,8 @@ if side~=0          % ------------------- off-surf
   % now eval retarded sig, tau, tau'...
   [f,fn,ft] = data_ptsrc(xs,T,Tt,tret,x,nx);
   retsig = -fn; rettau = f; rettaut = ft;  % ext GRF: D.u - S.un
-  %showsurffunc(s,retsig); title('GRF: retarded sigma'); showsurffunc(s,rettau); title('GRF: retarded tau'); showsurffunc(s,rettaut); title('GRF: retarded tau_t');
-
+  %showsurffunc(s,retsig); hold on; plot3(t.x(1),t.x(2),t.x(3),'k.','markersize',20); title('GRF: retarded sigma');
+  %showsurffunc(s,rettau); title('GRF: retarded tau'); showsurffunc(s,rettaut); title('GRF: retarded tau_t');
   % do u(x,t) = S.sigma + (wave eqn D).tau :
   u = LapSeval_panels(t,s,retsig) + LapDeval_panels(t,s,rettau) + RetDeval_panels(t,s,rettaut)
   [S D Dp] = tdSDmats(t.x,x,nx,w);
@@ -48,7 +53,7 @@ if side~=0          % ------------------- off-surf
   fprintf('max diff btw u eval @ targ via tdSDmats vs direct eval: %.3g\n',max(abs(v-u)))
   uex = data_ptsrc(xs,T,Tt,ttarg,t.x) * (side==1)         % zero inside, f out
   fprintf('N=%d, off-surf GRF test at 1 pt: u err = %.3g\n', N, u-uex)
-  % error 1e-8
+  % error 4e-9 for wobbly=0 (2e-8 wobbly=1), at p=6 (np=12,mp=8), r=8
 
 else               % ------------- on-surf GRF w/ local aux nodes, pan k, pt j
   o.nr = 8; o.nt = 2*o.nr; s = add_panels_auxquad(s,o);    % setup aux quad
