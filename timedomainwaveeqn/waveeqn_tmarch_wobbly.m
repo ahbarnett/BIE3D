@@ -125,12 +125,14 @@ for j=1:jtot           % .... marching loop
     muh = reshape(muhist,[n,N]); muh=muh(n-numel(wpred):n-1,:);
     munow = (wpred * muh)';  % predictor, kicks off iter for munow. row vec len N
     shift = 0.3;    % unknown best size
+    t4=tic;
     for k=1:predcorr         % corrector steps, expressed via change in munow...
       dmunow = (rhs - Rnow*munow - munow/2) ./ (Cnow+shift);
       munow = munow + dmunow;
       fprintf('\t k=%d\t ||dmunow||=%g\t ||resid||=%g\n',k,norm(dmunow),norm(Rnow*munow+0.5*munow-rhs)) % ...so can track norm
       %munow = (rhs - Bnow*munow) ./ Cnow;  % plain corrector
     end
+    fprintf('\t%d corr steps in %.3g s\n',predcorr,toc(t4))
   else    % implicit
     munow = Unow\(Lnow\rhs(pnow));           % write into "now" entries
   end
@@ -163,4 +165,5 @@ end
 end % ================== (rep loop)
 
 
-
+% show unstable mode (if unstable)...
+showsurffunc(s,muhist(n:n:end));
