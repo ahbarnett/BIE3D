@@ -29,6 +29,7 @@ function [t utrg rhsnrm gnrm munrm mu] = tmarch(dt,Ttot,predcorr,gdata,R,Rtrg,wp
 
 if nargin<8, o=[]; end
 if ~isfield(o,'verb'), o.verb=0; end
+if ~isfield(o,'shift'), o.shift=0; end
 jtot = ceil(Ttot/dt);   % # timesteps
 t = (1:jtot)'*dt;        % time grid (col vec)
 utrg = 0*t; rhsnrm = 0*t; gnrm = 0*t; munrm = 0*t;  % col vecs
@@ -57,11 +58,11 @@ for j=1:jtot           % .......................... marching loop
     muh = reshape(muhist,[n,N]); muh=muh(n-numel(wpred):n-1,:);
     munow = (wpred * muh)';  % predictor, kicks off iter for munow. row vec len N
     for k=1:predcorr         % corrector steps, expressed via change in munow...
-      dmunow = (rhs - Rnow*munow - munow/2) ./ Cnow;
-      if o.verb>1
-        fprintf('\t k=%d\t ||dmunow||=%g\n',k,norm(dmunow)) % ...so can track norm
-      end
+      dmunow = (rhs - Rnow*munow - munow/2) ./ (Cnow + o.shift);  % shifted
       munow = munow + dmunow;
+      if o.verb>1
+        fprintf('\t k=%d\t ||dmunow||=%g\t ||resid||=%g\n',k,norm(dmunow),norm(Rnow*munow+0.5*munow-rhs)) % ...so can track norm
+      end
       %munow = (rhs - Bnow*munow) ./ Cnow;  % plain corrector
     end
   else    % implicit

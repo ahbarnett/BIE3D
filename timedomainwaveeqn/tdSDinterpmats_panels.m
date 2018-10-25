@@ -81,20 +81,27 @@ for i=1:numel(tpan)  % copy each targ pan into full sparse lists...(use parfor?)
   Sd.i(hh)=Sdi{i}.i+roff; Sd.j(hh)=Sdi{i}.j; Sd.v(hh)=Sdi{i}.v;
   roff = roff + tpan{i}.N;
 end
+clear Si Di SDi        % helps cap RAM
 fprintf('stack cells into single sparse lists: %.3g s\n',toc(t0))
 
 if exist('fsparse')~=3  % unlike panelpair case, matlab assemble can be beaten:
   t0=tic;
   Sret = sparse(S.i,S.j,S.v,M,n*N);     % build each matrix in one go
+  clear S
   Dret = sparse(D.i,D.j,D.v,M,n*N);
+  clear D
   Sdotret = sparse(Sd.i,Sd.j,Sd.v,M,n*N);
+  clear Sd
   fprintf('matlab sparse build: %.3g s\n',toc(t0))
 else
   t0=tic;   % speed up w/ multithreaded stenglib/Fast/fsparse.c MEX :
   % it's possible 'nosort' speeds up build or spmatvec when added here... (nope)
   Sret = fsparse(S.i,S.j,S.v,[M,n*N,numel(S.i)]);  % build each matrix in one go
+  clear S
   Dret = fsparse(D.i,D.j,D.v,[M,n*N,numel(D.i)]);
+  clear D
   Sdotret = fsparse(Sd.i,Sd.j,Sd.v,[M,n*N,numel(Sd.i)]);
+  clear Sd
   fprintf('stenglib fsparse build: %.3g s\n',toc(t0))
 end
   

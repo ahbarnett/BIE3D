@@ -3,8 +3,11 @@
 % Barnett 1/4/17-1/16/17, w/ Hagstrom, Greengard. 6/7/17 pred-corr.
 % wobbly torus geom, 10/10/18.
 
-clear
-dt = 0.05;   % timestep
+% fsparse crashes for big probs
+rmpath ~/matlab/stenglib/Fast
+
+%clear
+dt = 0.1;   % timestep
 m = 4;      % control time interp order (order actually m+2)
 predcorr = -1;   % <0 for impl;  0,1,2, for pred-corr with that many corrector steps
 wobbly = 1;
@@ -22,13 +25,15 @@ end
 
 % find dt=0.1 unstable for (6,4) pans of p=12, even tho (12,8) @ p=6 stable.
 so.np=9; so.mp=6;    % panel numbers in major and minor direction.
+%so.np=15; so.mp=10;
+%so.np=6; so.mp=4;
 % need to do a joint study over h and dt to check stability
 [s N] = create_panels('torus',so,o); % surf
 [x nx w] = getallnodes(s);
 distmax = 6.0; %4.0;       % largest dist from anything to anything
 n = ceil(distmax/dt);
 
-if 1
+if 0
 SDload = 0;   % if load, params must match the above!
 if SDload, disp('loading SD retarded history BIE matrices...')
   load SDtarg_wtorus_p6_m6_dt01      % precomputed 2GB (took 80 sec)
@@ -76,7 +81,7 @@ mscs = [25 2 1.6 1.3];  % choice of max munows for color 3d plot
 
 % LOOP OVER VARIOUS REPRESENTATIONS (SETTING al,be)
 %for rep=1:4, al = mod(rep-1,2); be = rep>2; msc = mscs(rep);  %======= 1:4
-for rep=4, al = 1.0*mod(rep-1,2); be = 2.0*(rep>2); msc = mscs(rep);  %======= 1:4, new al,be
+for rep=4, al = 1.0*mod(rep-1,2); be = 1.0*(rep>2); msc = mscs(rep);  %======= 1:4, new al,be
 
 % Representation is u = D.mu + be.S.mu + al.S.mudot:
 %al = 1; be = 0;   % rep params, overridden by loop
@@ -119,10 +124,11 @@ for j=1:jtot           % .... marching loop
   if predcorr>=0
     muh = reshape(muhist,[n,N]); muh=muh(n-numel(wpred):n-1,:);
     munow = (wpred * muh)';  % predictor, kicks off iter for munow. row vec len N
+    shift = 0.3;    % unknown best size
     for k=1:predcorr         % corrector steps, expressed via change in munow...
-      dmunow = (rhs - Rnow*munow - munow/2) ./ Cnow;
-      fprintf('\t k=%d\t ||dmunow||=%g\n',k,norm(dmunow)) % ...so can track norm
+      dmunow = (rhs - Rnow*munow - munow/2) ./ (Cnow+shift);
       munow = munow + dmunow;
+      fprintf('\t k=%d\t ||dmunow||=%g\t ||resid||=%g\n',k,norm(dmunow),norm(Rnow*munow+0.5*munow-rhs)) % ...so can track norm
       %munow = (rhs - Bnow*munow) ./ Cnow;  % plain corrector
     end
   else    % implicit
