@@ -14,6 +14,8 @@ function [t utrg rhsnrm gnrm munrm mu] = tmarch(dt,Ttot,predcorr,gdata,R,Rtrg,wp
 %  R - surf self-eval matrix, acts on density history vec to eval td-BIE rep.
 %  Rtrg - target eval matrix, acts on dens hist vec to eval pot u_trg(t_now,x_trg)
 %  o - opts, such as o.verb = 0,1,2 (verbosity)
+%                    o.shift - diagonal shift for jacobi corrector iteration
+%                    o.random - if true, random muhist (garbage) for stab check
 %
 % Outputs:
 %  tt = time grid used (all timesteps, not just stored history by the end)
@@ -25,11 +27,12 @@ function [t utrg rhsnrm gnrm munrm mu] = tmarch(dt,Ttot,predcorr,gdata,R,Rtrg,wp
 
 % * just one targ for now -> make u a rect matrix.
 
-% Barnett 10/12/18
+% Barnett 10/12/18, 11/9/18
 
 if nargin<8, o=[]; end
 if ~isfield(o,'verb'), o.verb=0; end
 if ~isfield(o,'shift'), o.shift=0; end
+if ~isfield(o,'random'), o.random=0; end
 jtot = ceil(Ttot/dt);   % # timesteps
 t = (1:jtot)'*dt;        % time grid (col vec)
 utrg = 0*t; rhsnrm = 0*t; gnrm = 0*t; munrm = 0*t;  % col vecs
@@ -46,6 +49,7 @@ else            % implicit solver (we don't propose, but is predcorr->inf limit)
 %rhs = randn(N,1); mu = Unow\(Lnow\rhs(pnow)); norm(Rnow*mu + mu/2 - rhs) % check direct solve via LU
 end
 muhist = zeros(n*N,1);  % init dens hist vec
+if o.random, muhist = randn(size(muhist)); end
 t0=tic; if o.verb, fprintf('\ttmarch: starting %d steps...\n', jtot), end
 
 for j=1:jtot           % .......................... marching loop
