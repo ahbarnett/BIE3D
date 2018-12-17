@@ -4,15 +4,19 @@ function [pan N] = create_panels(shape,so,o)
 % [pan N] = create_panels(shape,shapeopts,convopts)
 %  Creates struct array of panels with their quadrature nodes for unknowns
 %
-%  shape = 'torus':    shapeopts has fields a (major radius), b (minor rad),
-%                        mp (# panels small circ), np (# pan big circ).
-%                        mp * np panels are ordered in incr theta (i) fast,
-%                        incr phi (j) slow  (ie flipud of matrix ordering).
-%                        Dof ordering within panels is same (y fast, x slow).
+%  shape = 'torus': shapeopts has fields a (major radius), b (minor rad),
+%                   and optional fields:
+%                     mp (# panels small circ),
+%                     np (# pan big circ),
+%                     orig = 0 (panels start at phi=th=0)
+%                            1 (1/2-panel offsets, default)
+%                   mp * np panels are ordered in incr theta (i) fast,
+%                   incr phi (j) slow  (ie flipud of matrix ordering).
+%                   Dof ordering within panels is same (y fast, x slow).
 %                   If b is a cell array of 3 function handles, interpreted as
 %                   { b(theta,phi), b_theta(theta,phi), and b_phi(theta,phi },
 %                   a minor radius function over theta and phi in [0,2pi), and
-%                   its correct partials.
+%                   its correct partials. This allows height-modulated torus.
 %
 % Output
 %  N : total number of unknowns
@@ -39,7 +43,7 @@ function [pan N] = create_panels(shape,so,o)
 %        topo - topology, eg 'torus'
 
 % Barnett 7/11/15. restarted 7/14/16, swapped np & mp 7/18/16
-% 12/29/16 neix1. torus allowed wobbly 10/10/18.
+% 12/29/16 neix1. torus allowed wobbly 10/10/18, so.orig 12/12/18
 
 % future ideas:
 % *** why not make just the surf pts be input, and derive all geom
@@ -55,6 +59,7 @@ if isfield(o,'p'), p = o.p; else p = 8; end  % # nodes per side of panel (order)
 if strcmp(shape,'torus') 
   if isfield(so,'mp'), mp = so.mp; else mp = 8; end  % # pans on small circle
   if isfield(so,'np'), np = so.np; else np = 12; end  % # pans on big circle
+  if isfield(so,'orig'), orig = so.orig; else orig = 1; end  % pan origin shift
   tpansiz1 = pi/np; tpansiz2 = pi/mp;     % panel half-sizes in parameter
   npan = mp*np; N = npan*p^2;       % same order all panels, total # nodes
   panind = reshape(1:npan,[mp np]); % 2d grid of panel numbers (sets dof order)
@@ -62,7 +67,7 @@ if strcmp(shape,'torus')
   for j=1:np, for i=1:mp, k=panind(i,j);     % loop over panels (in any order)
       pan{k}.psiz = [tpansiz1,tpansiz2];     % param sizes
       pan{k}.inds = p^2*(k-1)+(1:p^2);     % set up indices of unknowns
-      pan{k}.chart = @(t) torusparam(so.a,so.b,(t(1,:)+2*j)*tpansiz1,(t(2,:)+2*i)*tpansiz2);   % note speed is relative to original params; note i up, j across
+      pan{k}.chart = @(t) torusparam(so.a,so.b,(t(1,:)+orig-1+2*j)*tpansiz1,(t(2,:)+orig-1+2*i)*tpansiz2);   % note speed is relative to original params; note i up, j across
       pan{k}.spfac = tpansiz1*tpansiz2;  % factor to convert speed to chart z
       nei = panind(mod([i-2 i-1 i],mp)+1,mod([j-2 j-1 j],np)+1); % ordering key
       nei = nei(nei~=k);    % remove self from list, to leave 8

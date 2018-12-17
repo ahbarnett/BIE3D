@@ -3,12 +3,10 @@
 % code inside loop from waveeqn_tmarch.m, now calls tmarch.m
 % Dependencies: rest of BIE3D, memorygraph, optional:Parallel Toolbox
 
-% Barnett 11/9/18. this is a generic demo code; expt tweak scripts in expts/*/
-
-run('../bie3dsetup.m')
+run('../../../bie3dsetup.m')   % run from expts/wobblytorus
 % either use or skip fsparse (crashed on ccblin019 for np>=15)...
 %addpath ~/matlab/stenglib/Fast      % danger: only use for small problems!
-rmpath ~/matlab/stenglib/Fast      % danger: only use for small problems!
+rmpath ~/matlab/stenglib/Fast
 addpath ~/matlab/memorygraph
 
 clear all   % needed since tstepmatvec has persistent, shoul
@@ -29,24 +27,24 @@ t0=6; s0=1.0; T = @(t) 5*exp(-0.5*(t-t0).^2/s0^2); Tt = @(t) -((t-t0)/s0^2).*T(t
 
 Ttot = 50.0; %16; % total time to evolve (pulse has passed by 16; want tail)
 
-o.p = 6;  % p = spatial "order" (G-L nodes per panel side)
-m = 4;    % control time interp order (order actually m+2)
+o.p = 8;  % p = spatial "order" (G-L nodes per panel side)
+m = 6;    % control time interp order (order actually m+2)
 wpred = extrap(m);   % (m+2)th order extrapolation row vector for prediction
 
 al = 1.0;    % repr mixing alpha
-nam = sprintf('expts/wobblytorus/wtm_p%d_m%d_pulse_serial',o.p,m);
+nam = sprintf('wt_T50_m%d_p%d_pulse',m,o.p);
 
 % define dx and dt parameter plane...
-nps = [6 9]; %12 is max for 32GB RAM laptop
-%nps = 6:3:24;   % num panels on major torus loop (multiples of 3 best)
-dts = [0.07 0.1]; %[0.03 0.04 0.05 0.06 0.07 0.085 0.1 0.12 0.15 0.2 0.3 0.4 0.5];  % dt timesteps
-%dts = 0.1*2.^(-2:0.25:2.5);
+nps = 6:3:18;   % num panels on major torus loop (multiples of 3 best)
+%dts = [0.03 0.04 0.05 0.06 0.07 0.085 0.1 0.12 0.15 0.2 0.3 0.4 0.5];  % dt timesteps
+%dts = 0.1*2.^(-2:0.5:3);
+dts = 0.1*2.^(-2:0.25:3);
 maxsteps=max(ceil(Ttot./dts));
 
 % define expt runs for each dx-dt pair...
 betas = 2; %[0.5 1 2 4];    % beta repr mixing params
 pcs = [8]; %[1,2,3,4,-1];     % pred-corr steps (1,2,..;-1=inf)
-corrshift = 0.25;           % only helps for large dt
+corrshift = 0.25;
 nbe = numel(betas); npc = numel(pcs);
 
 ne = nbe*npc;  % # expts for each (dx,dt) pair, ie S,D full matrices filled
@@ -55,7 +53,7 @@ errs = gros;      % sup errors
 errts = nan(maxsteps,numel(dts),numel(nps),nbe,npc);  % 5d t-steps output arrs
 gnrms=errts; rhsnrms=errts; munrms=errts;
 neigful = 3;                      % # eigs of full t-step matrix
-neigjac = 12;    % to save spectrum of jacobi matrix (check shift helps)
+neigjac = 12;                  % to save spectrum of jacobi matrix
 eigful = nan(neigful,numel(dts),numel(nps),nbe,npc);  % full t-step mat
 eigmax = nan(numel(dts),numel(nps),nbe,npc);  % est max abs eig
 eigjac = nan(numel(dts),numel(nps),2,neigjac);
@@ -67,7 +65,7 @@ for i=1:numel(nps)    % ======================= MAIN DX LOOP
   so.np=nps(i); so.mp = round(so.np/3*2);   % spatial discr panel numbers
   [s N] = create_panels('torus',so,o); % surf
   [x nx w] = getallnodes(s);
-  o.nr = 8; o.nt = 2*o.nr;    % first add aux quad to panels: aux quad orders
+  o.nr = 12; o.nt = 2*o.nr;    % first add aux quad to panels: aux quad orders
   s = add_panels_auxquad(s,o);
   Linfo = setup_auxinterp(s{1}.t,o);  % std spatial interp to aux quad
 
@@ -169,7 +167,7 @@ for i=1:numel(nps)    % ======================= MAIN DX LOOP
   clear Starg Dtarg Sdottarg Rtarg Dtest Stest Sdottest Rtest a ap s Linfo
   memorygraph('label',sprintf('np=%d done',nps(i)));
   [bytes est_times cpu_times cpu_usages labelstrings labeltimes] = memorygraph('get');
-  %save(nam)   % save after every dx surf discr choice
+  save(nam)   % save after every dx surf discr choice
   
 end                   % =======================
 

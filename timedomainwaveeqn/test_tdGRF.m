@@ -1,6 +1,6 @@
 % test t-domain GRF for wave equation outside/inside/on a torus surface.
 % With Hagstrom+Greengard.
-% Barnett 12/15/16
+% Barnett 12/15/16. Updated for cruller, Oct 2018.
 
 clear
 wobbly = 1;
@@ -8,7 +8,7 @@ so.a = 1; b = 0.5;   % major radius and poloidal radius
 o.p = 6;   % panel order
 if ~wobbly  % plain torus
   so.b =b;
-else
+else         % cruller
   wc = 0.1;  % surf modulation ampl
   wm = 3;   % # wobbles in minor, poloidal (note swapped from 2013)
   wn = 5;   % # wobbles in toroidal, major

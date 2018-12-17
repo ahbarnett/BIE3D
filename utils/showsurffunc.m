@@ -14,7 +14,7 @@ function h = showsurffunc(s, f, o)
 % Barnett 7/19/16, based on 2/21/13 qp3d (swapped np,mp, killed 2d plot)
 if nargin==0, test_showsurffunc; return; end
 if nargin<3, o = []; end
-if ~isfield(o,'nofig'), fig = 1; else fig = 0; end
+if ~isfield(o,'nofig'), newfig = 1; else newfig = 0; end
 
 f = real(f);
 if ~isfield(o,'sc'), o.sc = max(abs(f)); end % colorscale, then symm or not...
@@ -45,10 +45,10 @@ if strcmp(s{1}.topo,'torus')             % the only case we know
   else  % interface ? - TODO make seal up poss w/ Bloch phases
     f = fr;
   end
-  if fig, figure; end   %else, hold on; end
+  if newfig, figure; end   %else, hold on; end
   h = surf(X,Y,Z, f); set(h,'ambientstrength',0.7,'facelighting','gouraud')
   shading interp; xlabel('x'); ylabel('y'); zlabel('z');
-  if fig, lightangle(45,0); end
+  if newfig, lightangle(45,0); end
   axis equal vis3d; 
 end
 colorbar; colormap(jet(256)); caxis(cs);

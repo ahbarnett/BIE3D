@@ -5,7 +5,9 @@ clear
 mats = {'tm_stab_p4_m2.mat','tm_stab_p6_m2.mat','tm_stab_p6_m4.mat','tm_stab_p6_m6.mat'};
 for expt=
 
-  *** to finish
+  *** to finish, but maybe don't believe since T stopped at 16.
+  
+  
   
 % get full set of timesteps and other expt-wide params from run 1...
 load(mats{1});
