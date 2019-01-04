@@ -65,7 +65,8 @@ for i=1:numel(nps)    % ======================= MAIN DX LOOP
   so.np=nps(i); so.mp = round(so.np/3*2);   % spatial discr panel numbers
   [s N] = create_panels('torus',so,o); % surf
   [x nx w] = getallnodes(s);
-  o.nr = 8; o.nt = 2*o.nr;    % first add aux quad to panels: aux quad orders
+  o.nr = 2*o.p;   % was 8, too small
+  o.nt = 2*o.nr;    % first add aux quad to panels: aux quad orders
   s = add_panels_auxquad(s,o);
   Linfo = setup_auxinterp(s{1}.t,o);  % std spatial interp to aux quad
 

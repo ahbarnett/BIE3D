@@ -3,8 +3,8 @@
 % Barnett 1/4/17-1/16/17, w/ Hagstrom, Greengard. 6/7/17 pred-corr.
 % wobbly torus geom, 10/10/18.
 
-% fsparse crashes for big probs
-rmpath ~/matlab/stenglib/Fast
+% fsparse crashes for big probs (on desktop not laptop)
+%rmpath ~/matlab/stenglib/Fast
 
 %clear
 dt = 0.1;   % timestep
@@ -24,7 +24,7 @@ else
 end
 
 % find dt=0.1 unstable for (6,4) pans of p=12, even tho (12,8) @ p=6 stable.
-so.np=9; so.mp=6;    % panel numbers in major and minor direction.
+so.np=12; so.mp=so.np*2/3;    % panel numbers in major and minor direction.
 %so.np=15; so.mp=10;
 %so.np=6; so.mp=4;
 % need to do a joint study over h and dt to check stability
@@ -33,12 +33,13 @@ so.np=9; so.mp=6;    % panel numbers in major and minor direction.
 distmax = 6.0; %4.0;       % largest dist from anything to anything
 n = ceil(distmax/dt);
 
-if 0
+if 1
 SDload = 0;   % if load, params must match the above!
 if SDload, disp('loading SD retarded history BIE matrices...')
   load SDtarg_wtorus_p6_m6_dt01      % precomputed 2GB (took 80 sec)
 else
-  o.nr = 8; o.nt = 2*o.nr;    % first add aux quad to panels: aux quad orders
+  o.nr = 2*o.p+4; o.nt = 2*o.nr;     % add aux quad to panels: aux quad orders
+  % (note nr too small, eg 8, causes weak instability!)
   s = add_panels_auxquad(s,o);
   Linfo = setup_auxinterp(s{1}.t,o);  % std spatial interp to aux quad
   %profile clear; profile on
@@ -81,7 +82,7 @@ mscs = [25 2 1.6 1.3];  % choice of max munows for color 3d plot
 
 % LOOP OVER VARIOUS REPRESENTATIONS (SETTING al,be)
 %for rep=1:4, al = mod(rep-1,2); be = rep>2; msc = mscs(rep);  %======= 1:4
-for rep=4, al = 1.0*mod(rep-1,2); be = 1.0*(rep>2); msc = mscs(rep);  %======= 1:4, new al,be
+for rep=4, al = 1.0*mod(rep-1,2); be = 2.0*(rep>2); msc = mscs(rep);  %======= 1:4, new al,be
 
 % Representation is u = D.mu + be.S.mu + al.S.mudot:
 %al = 1; be = 0;   % rep params, overridden by loop
@@ -107,7 +108,7 @@ t0=6; s0=1.0; T = @(t) 5*exp(-0.5*(t-t0).^2/s0^2); Tt = @(t) -((t-t0)/s0^2).*T(t
 % (t0/s0 = 6 gives 1e-8 of start-up error if no time delay from src to surf)
 %eps = 1e-5; tt = 4.3; fprintf('check Tt vs T: %.3g\n',(T(tt+eps)-T(tt-eps))/(2*eps) - Tt(tt)), clear tt
 
-Ttot = 18.0;     % total time to evolve
+Ttot = 30.0;     % total time to evolve
 jtot = ceil(Ttot/dt); 
 verb = 1;    % 0: text only, 1: final plot, 2: anim, 3: save movie
 muhist = zeros(n*N,1);  % init dens hist
@@ -166,4 +167,4 @@ end % ================== (rep loop)
 
 
 % show unstable mode (if unstable)...
-showsurffunc(s,muhist(n:n:end));
+%showsurffunc(s,muhist(n:n:end));

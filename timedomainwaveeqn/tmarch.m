@@ -4,6 +4,8 @@ function [t utrg rhsnrm gnrm munrm mu] = tmarch(dt,Ttot,predcorr,gdata,R,Rtrg,wp
 % This routine isolates the timestepping, given self-eval and targ-eval mats,
 % and RHS data.
 %
+% [t utrg rhsnrm gnrm munrm mu] = tmarch(dt,Ttot,predcorr,gdata,R,Rtrg,wpred,o)
+%
 % Inputs:
 %  dt - timestep
 %  Ttot - total time to evolve
@@ -13,7 +15,8 @@ function [t utrg rhsnrm gnrm munrm mu] = tmarch(dt,Ttot,predcorr,gdata,R,Rtrg,wp
 %            col vec of g_now on all surface points, at time t.
 %  R - surf self-eval matrix, acts on density history vec to eval td-BIE rep.
 %  Rtrg - target eval matrix, acts on dens hist vec to eval pot u_trg(t_now,x_trg)
-%  o - opts, such as o.verb = 0,1,2 (verbosity)
+%  o - optional struct, with fields such as:
+%                    o.verb = 0,1,2,3 (verbosity)
 %                    o.shift - diagonal shift for jacobi corrector iteration
 %                    o.random - if true, random muhist (garbage) for stab check
 %
@@ -36,10 +39,10 @@ if ~isfield(o,'random'), o.random=0; end
 jtot = ceil(Ttot/dt);   % # timesteps
 t = (1:jtot)'*dt;        % time grid (col vec)
 utrg = 0*t; rhsnrm = 0*t; gnrm = 0*t; munrm = 0*t;  % col vecs
-keepmu = nargout>5;
-if keepmu, mu = nan(N,jtot); end
 N = size(R,1);   % # surf pts
 n = size(R,2)/N;   % # time hist pts in dens hist vec and R mats
+keepmu = nargout>5;
+if keepmu, mu = nan(N,jtot); end
 Rnow = R(:,n:n:end); % pull out N*N current-time mat (last time index not first!)
 if predcorr>=0   % set up for t-stepping
   Cnow = diag(Rnow) + 1/2;    % col vector, note includes the 1/2
@@ -64,7 +67,7 @@ for j=1:jtot           % .......................... marching loop
     for k=1:predcorr         % corrector steps, expressed via change in munow...
       dmunow = (rhs - Rnow*munow - munow/2) ./ (Cnow + o.shift);  % shifted
       munow = munow + dmunow;
-      if o.verb>1
+      if o.verb>2
         fprintf('\t k=%d\t ||dmunow||=%g\t ||resid||=%g\n',k,norm(dmunow),norm(Rnow*munow+0.5*munow-rhs)) % ...so can track norm
       end
       %munow = (rhs - Bnow*munow) ./ Cnow;  % plain corrector
@@ -78,8 +81,8 @@ for j=1:jtot           % .......................... marching loop
   rhsnrm(j)=max(abs(rhs));   % this is not the BVP RHS, but in the pred-corr!
   munrm(j)=max(abs(munow));
   if keepmu, mu(:,j) = munow; end
-  if o.verb>1
-    fprintf('j=%4d (t=%.3f):\t|mu|=%.3g\tu=%.6g\t|g|=%.3g\t|rhs|=%.3g\n',j,t(j),munrm(j),utrg(j),gnrm(j),rhsnrm(j))
+  if o.verb>1 | j==jtot
+    fprintf('j=%4d (t=%.3f): |mu|=%.3g  u=%.6g\t|g|=%.3g\t|rhs|=%.3g\n',j,t(j),munrm(j),utrg(j),gnrm(j),rhsnrm(j))
   end
 end                    % .........................
 
