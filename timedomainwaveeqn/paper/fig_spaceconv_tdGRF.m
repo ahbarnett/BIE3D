@@ -32,6 +32,7 @@ for fig=1:2, fig     %%%%%%% subfigure loop over p
   end
   sides = [1 0 0 0];  % to match nr cases, must always be four
   errs = nan(numel(nps),numel(nrs));
+  compute=0; if compute   % ~~~ to save time, reload
   for c=1:numel(nrs)   % ======= lines (cases) on same plot, nr loop =========
     nr = nrs(c), side = sides(c);
     %side = 0;  % -1,0,1: choose nature of GRF test pt (will be a fake 1-pt panel)
@@ -87,26 +88,30 @@ for fig=1:2, fig     %%%%%%% subfigure loop over p
       errs(e,c)=abs(u-uex);
     end        % ------------------------------------------
   end        % ===================
+  clear sf; s = s(1); save(sprintf('spaceconv_p%d.mat',o.p)); % kill big & save
+  else, load(sprintf('spaceconv_p%d.mat',o.p));    % get stored data
+  end     % ~~~~~~~
   
   % main convergence plot...
   dxs = sqrt(surfarea./Ns);   % defn of dx_typ for surface
   figure; %loglog(dxs,abs(SAs-surfarea),'o-'); hold on;
   loglog(dxs,errs(:,1),'.-','markersize',10); axis tight; hold on;
-  loglog(dxs,errs(:,2:end),'+-');
-  if fig==1, lab='(b)'; sc=0.1; else, lab='(c)'; sc=100; end  % label, offset
-  loglog(dxs,sc*dxs.^o.p,'k--');     % plain order p (not pred 2p)
+  loglog(dxs,errs(:,2:end),'+-'); v=axis;
+  if fig==1, lab='(b)'; sc=0.38; else, lab='(c)'; sc=0.18; end  % label, offset
+  loglog(dxs,(dxs/sc).^(2*o.p),'k--');     % pred "outer order" 2p
+  axis(v);
   %xlabel('$\Delta x_{typ}$','interpreter','latex');
   xlabel('$h$','interpreter','latex');  %'$\Delta x$'
   ylabel('pointwise error','interpreter','latex');
-  h=legend('exterior',sprintf('on-surf. $n_r=%d$',nrs(2)),sprintf('on-surf. $n_r=%d$',nrs(3)),sprintf('on-surf. $n_r=%d$',nrs(4)),sprintf('order $%d$',o.p));
+  h=legend('exterior',sprintf('on-surf. $n_r=%d$',nrs(2)),sprintf('on-surf. $n_r=%d$',nrs(3)),sprintf('on-surf. $n_r=%d$',nrs(4)),sprintf('order $2p=%d$',2*o.p));
   set(h,'location','southeast','interpreter','latex');
   title(sprintf('%s surface quadrature convergence, p=%d',lab,o.p));
   %hold on; loglog(dxs,100*dxs.^(2*o.p),'m-'); % predicted 2p rate
-  set(gcf,'paperposition',[0 0 3.5 3.5]);    % somehow black border in tex :(
+  set(gcf,'paperposition',[0 0 3.5 3.5]);
   print('-depsc2',sprintf('spaceconv_p%d.eps',o.p));
 end   %%%%%%%%%%%%%
 
-if 1    % plot the ret tau used, making high-resolution smooth nodes for plot...
+if 0    % plot the ret tau used, making high-resolution smooth nodes for plot...
   so.np = 15; so.mp = 10; so.orig=0; o.p = 8;   % new params
   [s N] = create_panels('torus',so,o);  % copied from above
   [x nx w] = getallnodes(s);  surfarea = sum(w);  % use large np,mp to get S.A.

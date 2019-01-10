@@ -38,7 +38,8 @@ if ~isfield(o,'shift'), o.shift=0; end
 if ~isfield(o,'random'), o.random=0; end
 jtot = ceil(Ttot/dt);   % # timesteps
 t = (1:jtot)'*dt;        % time grid (col vec)
-utrg = 0*t; rhsnrm = 0*t; gnrm = 0*t; munrm = 0*t;  % col vecs
+Nt = size(Rtrg,1); utrg = zeros(Nt,jtot);     % u output array
+rhsnrm = 0*t; gnrm = 0*t; munrm = 0*t;  % col vecs
 N = size(R,1);   % # surf pts
 n = size(R,2)/N;   % # time hist pts in dens hist vec and R mats
 keepmu = nargout>5;
@@ -76,7 +77,7 @@ for j=1:jtot           % .......................... marching loop
     munow = Unow\(Lnow\rhs(pnow));
   end
   muhist(n:n:end) = munow;           % write into "now" entries
-  utrg(j) = Rtrg*muhist;                                    % eval pot at trg
+  utrg(:,j) = Rtrg*muhist;           % eval pot (or vec of) at trg
   gnrm(j)=max(abs(gnow));
   rhsnrm(j)=max(abs(rhs));   % this is not the BVP RHS, but in the pred-corr!
   munrm(j)=max(abs(munow));

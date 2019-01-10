@@ -3,7 +3,7 @@
 % The issue of nearest smooth panel formally low-order.  Barnett 1/4/19
 
 clear
-p=7;                            % Legendre pts per panel
+p=8;                            % Legendre pts per panel (try 2 to 9)
 gam = 1/2;                      % power of singular integral
 % plain power law - always dominated by near sing
 f = @(x) x.^-gam;               % integrand;  integrable on (0,1) for gam<1
@@ -25,11 +25,12 @@ for i=1:numel(ns), n=ns(i);
   Is(i) = I;
 end
 figure; loglog(hs,abs(Is-Iex),'+-'); hold on;
-prefac = 0.01 * (2*p)^(-p); plot(hs, prefac*hs,'r:');  % 1st ord
+rho = 3+sqrt(8); prefac = rho^(-2*p);  % trefethen ATAP Thm 19.3 - v close
+plot(hs, prefac*hs,'r:');  % 1st ord
 axis tight; v = axis;
 plot(hs, hs.^(2*p),'r--');
 axis(v); xlabel('h = 1/n'); ylabel('integral error')
 
 % indeed shows order-2p for a while, saturating at order less than 1,
-% at epsilon typically 2p^-p, or maybe exp(-cp).
+% at epsilon typically exp(-cp).
 
