@@ -1,8 +1,10 @@
 % t-domain wave eqn BIE: scattering (exterior Dirichlet BVP).
 % paper fig version, Barnett 1/9/19, based on fig_toggleab.m
+
 % fsparse crashes for big probs (on desktop not laptop)
 %rmpath ~/matlab/stenglib/Fast
-clear
+clear; verb = 1;
+
 dt =   0.1;   % timestep
 Ttot = 10.0;     % total time to evolve
 m = 4;      % control time interp order (order actually m+2)
@@ -22,15 +24,24 @@ else        % cruller
 end
 so.np = 9; so.mp=round(so.np*2/3);  % panel # in major,minor directions
 o.nr = 2*o.p; o.nt = 2*o.nr;  % aux quad orders: radial and angular nodes
-% Dirichlet data for BVP: t-dep pulse func
-t0=-1; s0=0.12; T = @(t) 50*exp(-0.5*(t-t0).^2/s0^2); Tt = @(t) -((t-t0)/s0^2).*T(t);
-%xs = [4.5;0.1;-0.2];   % src pt for data, now outside
-xs = [.7;0.3;3.5];   % src pt for data, above
-uinc = @(x,t) data_ptsrc(xs,T,Tt,t,x);    % incident wave
+% Dirichlet data for BVP: t-dep pulse func...
+incwave = 'plane';    % 'ptsrc' (lauched at t0) or 'plane' (hitting 0 at t0)
+s0 = 0.12;         % closely tied to dt. Error ~ exp(-3*(dt/s0)^2)
+if strcmp(incwave,'ptsrc')
+  a0=50; t0=-1; [T,Tt] = pulsegaussian(a0,t0,s0);
+  xs = [.7;0.3;3.5];   % src pt for data, above
+  uinc = @(x,t) data_ptsrc(xs,T,Tt,t,x);    % incident wave func
+elseif strcmp(incwave,'plane')
+  a0=1; t0=3; [T,Tt] = pulsegaussian(a0,t0,s0);
+  incdir = [-.2,.1,-1]; incdir = incdir/norm(incdir);
+  xs = [.7;0.3;3.5];   % src pt for data, above
+  uinc = @(x,t) data_planewave(incdir,T,Tt,t,x);    % incident wave func
+end
+fwhm = fzero(@(t) T(t)-a0/2,t0+1)-fzero(@(t) T(t)-a0/2,t0-1)  % get pulse width
 
-shape='torus'; [s N] = create_panels(shape,so,o);     % surf
+shape='torus'; [s N] = create_panels(shape,so,o);     % surf (torus class)
 [x nx w] = getallnodes(s);
-gdata = @(t) -uinc(x,t);      % cancel uinc Dirichlet data on s.x, a func
+gdata = @(t) -uinc(x,t);    % cancel uinc Dirichlet data on s.x, as func of t
 wpred = extrap(m);          % extrapolation row vector
 fprintf('surf quad order p=%d, %dx%d panels, N=%d\n',o.p,so.np,so.mp,N)
 
@@ -60,7 +71,7 @@ plot3(t.x(1,:),t.x(2,:),t.x(3,:),'.'); drawnow
 t0=tic;
 tret = -dists(t.x,x);  % retarded times of surf nodes rel to ttarg, trg loc fast
 [jmax,jmin,a,ap] = interpmat(tret,dt,m);   % Tom's coeffs, 1 row per tret entry
-clear tret;
+clear tret;   % hitting 30 GB even at np=9, why?
 joff = jmin+n-1;         % padding on the ancient side
 if joff<0, error('u_test eval vec requesting too ancient history!'); end
 a = [zeros(N*t.N,joff), a, zeros(N*t.N,-jmax)];  % dense, pad to width n
@@ -81,23 +92,27 @@ al=1; be=2;   % Representation is u = D.mu + be.S.mu + al.S.mudot:
 Rtarg = Dtarg + al*Sdottarg + be*Starg;   % for history application of ret BIEs
 Rtest = Dtest + al*Sdottest + be*Stest;   % (sparse) for the test pt eval
 clear Stest Dtest Sdottest Starg Dtarg Sdottarg;
+% EVOLVE --------
 mo = []; mo.verb = 1; mo.shift=corrshift;  % opts for timestepping
 [tj u rhsnrm gnrm munrm muall] = tmarch(dt,Ttot,predcorr,gdata,Rtarg,Rtest,wpred,mo);  % do time steps; u is now scattered BVP soln
 nst = numel(tj);    % # time steps done
 ttt = kron(tj',ones(1,t.N)); xxx = kron(ones(1,nst),t.x); % spacetime eval lists
 utot = reshape(uinc(xxx,ttt) + u(:), [t.N nst]);      % #targs * #tsteps
+% ---------------
 
-t0=4.0; jt=find(tj==t0); jx=45; jz=36; j=jz+numel(gz)*(jx-1);
+% check at point...
+t0=4.0; jt=find(tj==t0); jx=37; jz=41; j=jz+numel(gz)*(jx-1);
 fprintf('test pt x0=(%g,%g,%g)\n',xx(j),0,zz(j));
 fprintf('dt=%g,m=%d,np=%d,p=%d,nr=%d: \t u(x0,%g) = %.9f\n',dt,m,so.np,o.p,o.nr,t0,utot(j,jt))
+mask = ~insidexsecdomain(shape,so,xx,zz);   % masks out interior pts in slice
 
-if 1
-  figure; for i=1:nst              % anim for xz-slice rect array targets
-  imagesc(gx,gz,reshape(utot(:,i),size(zz))); xlabel('x'); ylabel('z');
+if verb==1   % rect xz-slice (y=0) array of targets, anim
+  figure; for i=1:nst
+  imagesc(gx,gz,mask.*reshape(utot(:,i),size(zz))); xlabel('x'); ylabel('z');
   caxis(2*[-1 1]); axis xy equal tight; v=axis; h=showsurfxsec(shape,so);
   axis(v); title(sprintf('t=%.2f',tj(i))); drawnow; pause(0.05); hold off;
   end
-  figure; plot(tj,utot(jz+numel(gz)*(jx-1),:),'+-'); 
+  figure; plot(tj,utot(jz+numel(gz)*(jx-1),:),'+-'); xlabel('t');
 end
   
 if 0 % line target history...
@@ -109,5 +124,40 @@ figure; for i=1:nst              % anim for line targets
 drawnow; pause(0.02); end
 end
 
+if verb>1  % 3d slice anim...
+  nam=sprintf('cruller_scatt_%s_pulse_dt%g_m%d_p%d_np%d',incwave,dt,m,o.p,so.np);
+  if verb>2, wO=VideoWriter([nam '.avi']); wO.FrameRate=15; wO.open; end
+  figure; for i=1:nst
+  oo=[]; oo.nofig=1; [h0 h4]=showsurffunc(s,muall(:,i),oo); hold on;
+  h1=surf(xx,0*xx,zz,mask.*reshape(utot(:,i),size(zz)));
+  set(h1,'FaceLighting','none','linestyle','none','facecolor','flat');
+  oo=[]; oo.dims=3; h2=showsurfxsec(shape,so,oo);   % add intersection curves
+  caxis(1.0*[-1 1]); view(-30+i/2,35); lightangle(45,0); axis tight;
+  ax=gca; ax.Clipping='off'; ax.CameraPosition = ax.CameraPosition*0.6;
+  h3=title(sprintf('slice of u_{tot} and \\mu on surface: t=%.2f',tj(i)));
+  h3.Position = [0,0,2.5];
+  pos = h4.Position; h4.Position = pos + [.07,0,0,0];  % push colorbar right
+  hold off; drawnow;
+  if verb>2, writeVideo(wO,getframe(gcf)); end
+  if i<nst, clf; end   % otherwise surf not cleared, unsure why
+  end
+  if verb>2, close(wO);     % writes AVI movie out; now encode small MP4...
+    system(sprintf('unset LD_LIBRARY_PATH; ffmpeg -i %s.avi -y -c:v libx264 -crf 20 %s.mp4',nam,nam));
+  end
+end
 
+if 0 % figs for paper... (will have to output PNG then convert to EPS)
+  ***** TO FINISH
+t0=3.0; jt = find(tj==t0);
+figure; h=showsurffunc(s,muall(:,jt)); hold on;
+h=surf(xx,0*xx,zz,mask.*reshape(utot(:,jt),size(zz)));
+set(h,'FaceLighting','none'); shading interp;
+axis off; %xlabel('x'); ylabel('y'); zlabel('z');
+caxis(2*[-1 1]); axis vis3d equal tight;
+title(sprintf('t=%.2f',tj(jt)));
+
+
+%  figure; plot(tj,utot(jz+numel(gz)*(jx-1),:),'+-'); 
+
+end
 

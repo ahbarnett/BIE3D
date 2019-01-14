@@ -1,11 +1,13 @@
-function h = showsurffunc(s, f, o)
+function [h h2] = showsurffunc(s, f, o)
 % SHOWSURFFUNC   show real-valued vector on surface (torus-like for now)
 %
-% h = showsurffunc(s, f, o)
+% [h h2] = showsurffunc(s, f, o)
+%
 % Inputs:
 %  s = cell array of quad panels (only torus-like surface for now)
 %  f = list of real function values on the nodes s.x.
 %  Automatically decides if 1-sided or symmetrized colorscale is best.
+% Outputs: h - handle to surface, h2 - handle to colorbar
 %
 % o controls opts:
 %  o.sc = sets color scale
@@ -51,7 +53,7 @@ if strcmp(s{1}.topo,'torus')             % the only case we know
   if newfig, lightangle(45,0); end
   axis equal vis3d; 
 end
-colorbar; colormap(jet(256)); caxis(cs);
+h2 = colorbar; colormap(jet(256)); caxis(cs);
 
 %%%%%%%%%%%%
 function test_showsurffunc
