@@ -2,10 +2,10 @@
 % paper fig version, Barnett 1/9/19, based on fig_toggleab.m
 
 % fsparse crashes for big probs (on desktop not laptop)
-%rmpath ~/matlab/stenglib/Fast
-clear; verb = 1;
+rmpath ~/matlab/stenglib/Fast
+clear; verb = 3;
 
-dt =   0.1;   % timestep
+dt =   0.05;   % timestep
 Ttot = 10.0;     % total time to evolve
 m = 4;      % control time interp order (order actually m+2)
 predcorr = 8;   % <0 for impl;  0,1,2, for pred-corr with that many corr steps
@@ -22,7 +22,7 @@ else        % cruller
   ft = @(t,p) -wc*wm*sin(wm*t+wn*p); fp = @(t,p) -wc*wn*sin(wm*t+wn*p);
   so.b = {f,ft,fp};     % pass in instead of b param
 end
-so.np = 9; so.mp=round(so.np*2/3);  % panel # in major,minor directions
+so.np = 18; so.mp=round(so.np*2/3);  % panel # in major,minor directions
 o.nr = 2*o.p; o.nt = 2*o.nr;  % aux quad orders: radial and angular nodes
 % Dirichlet data for BVP: t-dep pulse func...
 incwave = 'plane';    % 'ptsrc' (lauched at t0) or 'plane' (hitting 0 at t0)
@@ -106,7 +106,7 @@ fprintf('test pt x0=(%g,%g,%g)\n',xx(j),0,zz(j));
 fprintf('dt=%g,m=%d,np=%d,p=%d,nr=%d: \t u(x0,%g) = %.9f\n',dt,m,so.np,o.p,o.nr,t0,utot(j,jt))
 mask = ~insidexsecdomain(shape,so,xx,zz);   % masks out interior pts in slice
 
-if verb==1   % rect xz-slice (y=0) array of targets, anim
+if verb>=1   % rect xz-slice (y=0) array of targets, anim
   figure; for i=1:nst
   imagesc(gx,gz,mask.*reshape(utot(:,i),size(zz))); xlabel('x'); ylabel('z');
   caxis(2*[-1 1]); axis xy equal tight; v=axis; h=showsurfxsec(shape,so);
@@ -147,7 +147,7 @@ if verb>1  % 3d slice anim...
 end
 
 if 0 % figs for paper... (will have to output PNG then convert to EPS)
-  ***** TO FINISH
+ % ***** TO FINISH
 t0=3.0; jt = find(tj==t0);
 figure; h=showsurffunc(s,muall(:,jt)); hold on;
 h=surf(xx,0*xx,zz,mask.*reshape(utot(:,jt),size(zz)));
