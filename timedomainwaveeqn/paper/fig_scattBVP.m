@@ -34,12 +34,13 @@ if strcmp(incwave,'ptsrc')
 elseif strcmp(incwave,'plane')
   a0=1; t0=3; [T,Tt] = pulsegaussian(a0,t0,s0);
   incdir = [-.2,.1,-1]; incdir = incdir/norm(incdir);
-  xs = [.7;0.3;3.5];   % src pt for data, above
   uinc = @(x,t) data_planewave(incdir,T,Tt,t,x);    % incident wave func
 end
 fwhm = fzero(@(t) T(t)-a0/2,t0+1)-fzero(@(t) T(t)-a0/2,t0-1)  % get pulse width
 
 shape='torus'; [s N] = create_panels(shape,so,o);     % surf (torus class)
+surfarea =        22.6225981826694;   % for this shape
+h = sqrt(surfarea/N);
 [x nx w] = getallnodes(s);
 gdata = @(t) -uinc(x,t);    % cancel uinc Dirichlet data on s.x, as func of t
 wpred = extrap(m);          % extrapolation row vector
@@ -106,7 +107,7 @@ fprintf('test pt x0=(%g,%g,%g)\n',xx(j),0,zz(j));
 fprintf('dt=%g,m=%d,np=%d,p=%d,nr=%d: \t u(x0,%g) = %.9f\n',dt,m,so.np,o.p,o.nr,t0,utot(j,jt))
 mask = ~insidexsecdomain(shape,so,xx,zz);   % masks out interior pts in slice
 
-if verb==1   % rect xz-slice (y=0) array of targets, anim
+if verb==2   % rect xz-slice (y=0) array of targets, anim
   figure; for i=1:nst
   imagesc(gx,gz,mask.*reshape(utot(:,i),size(zz))); xlabel('x'); ylabel('z');
   caxis(2*[-1 1]); axis xy equal tight; v=axis; h=showsurfxsec(shape,so);
@@ -146,18 +147,40 @@ if verb>1  % 3d slice anim...
   end
 end
 
-if 0 % figs for paper... (will have to output PNG then convert to EPS)
-  ***** TO FINISH
-t0=3.0; jt = find(tj==t0);
-figure; h=showsurffunc(s,muall(:,jt)); hold on;
-h=surf(xx,0*xx,zz,mask.*reshape(utot(:,jt),size(zz)));
-set(h,'FaceLighting','none'); shading interp;
-axis off; %xlabel('x'); ylabel('y'); zlabel('z');
-caxis(2*[-1 1]); axis vis3d equal tight;
-title(sprintf('t=%.2f',tj(jt)));
+% ============================================================================
+if verb   % figs for paper... (will have to output PNG then convert to EPS)
+  jx=37; jz=41; j=jz+numel(gz)*(jx-1); x0=xx(j); z0=zz(j);  % spatial pt
+  fprintf('test pt x0=(%g,%g,%g)\n',x0,0,z0);
+  t0s = [3.0, 7.0];           % two times, for (a) and (b)
+  for ii=1:2
+    figure; t0=t0s(ii);
+    i = find(abs(tj-t0)<1e-14);
+    oo=[]; oo.nofig=1; [h0 h4]=showsurffunc(s,muall(:,i),oo); hold on;
+    h1=surf(xx,0*xx,zz,mask.*reshape(utot(:,i),size(zz)));
+    set(h1,'FaceLighting','none','linestyle','none','facecolor','flat');
+    oo=[]; oo.dims=3; h2=showsurfxsec(shape,so,oo);   % add intersection curves
+    plot3(x0,0,z0,'.','markersize',20);
+    caxis(1.0*[-1 1]); if ii==2, caxis(max(abs(utot(:,i)))*[-1 1]); end
+    view(20,35); lightangle(45,0); axis tight;
+    ax=gca; ax.Clipping='off'; ax.CameraPosition = ax.CameraPosition*0.65;
+    h3=title(sprintf('(%c)     u_{tot} on \\{y=0\\} and \\mu on \\Gamma:     t=%.g',ii+96,tj(i)));
+    h3.Position = [0,0,2.5];
+    pos = h4.Position; h4.Position = pos + [.07,0,0,0];  % push colorbar right
+    set(gcf,'paperposition',[0 0 5.8 5]);
+    nam = sprintf('scatt_%d',ii);
+    print('-dpng','-r600', [nam '.png']);
+    system(['convert -trim ' nam '.png eps2:' nam '.eps']);
+  end
+  figure; plot(tj,utot(jz+numel(gz)*(jx-1),:),'.-');
+  xlabel('$$t$$','interpreter','latex');
+  ylabel('$$u_{tot}(x_0,t)$$','interpreter','latex');
+  title('(c) \quad total wave signal at $$x_0$$', 'interpreter','latex');
+  set(gcf,'paperposition',[0 0 5 3]);
+  print -depsc2 scatt_sig.eps
 
-
-%  figure; plot(tj,utot(jz+numel(gz)*(jx-1),:),'+-'); 
-
+  % *** todo: (d) error convergence at x_0, t=3,  vs np = 6,9
+  % with dt = h
+  
 end
+
 
