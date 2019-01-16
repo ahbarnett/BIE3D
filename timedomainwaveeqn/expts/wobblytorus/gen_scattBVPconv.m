@@ -2,7 +2,7 @@
 % paper fig version, Barnett 1/14/19.
 % dx coupled with dt, convergence at point (x0,0,z0).
 
-run('../../bie3dsetup');
+run('../../../bie3dsetup');
 % fsparse crashes for big probs (on desktop not laptop)
 rmpath ~/matlab/stenglib/Fast
 clear;
@@ -73,6 +73,7 @@ for i=1:numel(nps)         % ======================== MAIN DX LOOP ========
   %plot3(t.x(1,:),t.x(2,:),t.x(3,:),'.'); drawnow
 
   t0=tic;
+  if 0 % old, all mu-hist to test targets in a single dense op, scales poorly...
   tret = -dists(t.x,x); % ret times of surf nodes rel to ttarg, trg loc fast
   [jmax,jmin,a,ap] = interpmat(tret,dt,m); % Tom's coeffs, 1 row per tret entry
   clear tret;   % hitting 30 GB even at np=9, why?
@@ -87,6 +88,36 @@ for i=1:numel(nps)         % ======================== MAIN DX LOOP ========
   Dtest = sparse(reshape(permute(reshape(Dtest,[t.N N n]),[1 3 2]),[t.N N*n]));
   Sdottest = ap.*repmat(S(:),[1 n]); clear ap;
   Sdottest = sparse(reshape(permute(reshape(Sdottest,[t.N N n]),[1 3 2]),[t.N N*n]));
+  else  % lower-RAM sparse fill of Stest, row by row, single assemble, etc...
+    nnzm = ceil(1.1*m*t.N*N);  ii1 = zeros(1,nnzm);    % sparse index lists
+    jj1=ii1;v1=ii1;ii2=ii1;jj2=ii1;v2=ii1;ii3=ii1;jj3=ii1;v3=ii1;
+    p1=0;p2=0;p3=0;   % ptrs to sparse ind lists
+    for it=1:t.N        % loop over test targs
+      tret = -dists(t.x(:,it),x);   % ret times of surf nodes rel to ttarg
+      [jmax,jmin,a,ap] = interpmat(tret,dt,m);  % Tom's, 1 row per tret entry
+      joff = jmin+n-1;         % padding on the ancient side
+      if joff<0, error('u_test eval vec requesting too ancient history!'); end
+      a = sparse(a); ap = sparse(ap);
+      a = [zeros(N,joff), a, zeros(N,-jmax)];   % sparse, pad to N*n
+      ap = [zeros(N,joff), ap, zeros(N,-jmax)];
+      [S D Dp] = tdSDmats(t.x(:,it),x,nx,w);    % each is 1xN, dense row
+      z = a'.*kron(ones(n,1),S);  % a is sparse, S dense expanded vertically
+      [~,jj,vv] = find(z(:)'); ind = p1+(1:numel(jj));  % unroll n*N sparse row
+      ii1(ind)=it; jj1(ind)=jj; v1(ind)=vv; p1=ind(end);  % append
+      z = a'.*kron(ones(n,1),D) + ap'.*kron(ones(n,1),Dp);
+      [~,jj,vv] = find(z(:)'); ind = p2+(1:numel(jj));  % unroll n*N sparse row
+      ii2(ind)=it; jj2(ind)=jj; v2(ind)=vv; p2=ind(end);  % append
+      z = ap'.*kron(ones(n,1),S);
+      [~,jj,vv] = find(z(:)'); ind = p3+(1:numel(jj));  % unroll n*N sparse row
+      ii3(ind)=it; jj3(ind)=jj; v3(ind)=vv; p3=ind(end);  % append
+    end
+    Stest = sparse(ii1(1:p1),jj1(1:p1),v1(1:p1),t.N,N*n); % assemble in one step
+    clear ii1 jj1 v1 p1 tret jj vv a ap ind
+    Dtest = sparse(ii2(1:p2),jj2(1:p2),v2(1:p2),t.N,N*n);
+    clear ii2 jj2 v2 p2
+    Sdottest = sparse(ii3(1:p3),jj3(1:p3),v3(1:p3),t.N,N*n);
+    clear ii3 jj3 v3 p3
+  end
   fprintf('test target eval mats filled, %.3g s\n',toc(t0));
 
   al=1; be=2;   % Representation is u = D.mu + be.S.mu + al.S.mudot:
@@ -102,7 +133,7 @@ for i=1:numel(nps)         % ======================== MAIN DX LOOP ========
   % ---------------
 
   % check at point... (x0,0,z0) and t0
-  t0=3.0; jt=find(abs(tj-t0)==min(abs(tj-t0)));  % rough similar pt
+  t0=3.5; jt=find(abs(tj-t0)==min(abs(tj-t0)));  % rough similar pt
   jx=37; jz=41; j=jz+numel(gz)*(jx-1); x0=xx(j); z0=zz(j);  % spatial pt
   fprintf('test pt x0=(%g,%g,%g)\n',x0,0,z0);
   fprintf('dt=%g,m=%d,np=%d,p=%d,nr=%d: \t u(x0,%g) = %.9f (not conv test!)\n',dt,m,so.np,o.p,o.nr,tj(jt),utot(j,jt))   % note since dt) is off-dt-grid.

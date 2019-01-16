@@ -107,7 +107,7 @@ fprintf('test pt x0=(%g,%g,%g)\n',xx(j),0,zz(j));
 fprintf('dt=%g,m=%d,np=%d,p=%d,nr=%d: \t u(x0,%g) = %.9f\n',dt,m,so.np,o.p,o.nr,t0,utot(j,jt))
 mask = ~insidexsecdomain(shape,so,xx,zz);   % masks out interior pts in slice
 
-if verb>=1   % rect xz-slice (y=0) array of targets, anim
+if verb>1   % rect xz-slice (y=0) array of targets, anim
   figure; for i=1:nst
   imagesc(gx,gz,mask.*reshape(utot(:,i),size(zz))); xlabel('x'); ylabel('z');
   caxis(2*[-1 1]); axis xy equal tight; v=axis; h=showsurfxsec(shape,so);
@@ -171,13 +171,16 @@ if verb   % figs for paper... (will have to output PNG then convert to EPS)
     print('-dpng','-r600', [nam '.png']);
     system(['convert -trim ' nam '.png eps2:' nam '.eps']);
   end
-  figure; plot(tj,utot(jz+numel(gz)*(jx-1),:),'.-');
+  l = load('../expts/wobblytorus/scattBVPconv.mat');  % by:gen_scattBVPconv.m
+  r = l.run{3};
+  figure; plot(r.tj,r.utot(jz+numel(gz)*(jx-1),:),'.-');   % signal
   xlabel('$$t$$','interpreter','latex');
   ylabel('$$u_{tot}(x_0,t)$$','interpreter','latex');
   title('(c) \quad total wave signal at $$x_0$$', 'interpreter','latex');
   set(gcf,'paperposition',[0 0 5 3]);
   print -depsc2 scatt_sig.eps
-
-  % *** todo: (d) error convergence at x_0, t=3,  vs np = 6,9
-  % with dt = h
+  
+  % (d) error convergence at x_0, t=3,  vs np = 6,9
+  % with dt = h.
+  % **** loop over runs
 end %=======
