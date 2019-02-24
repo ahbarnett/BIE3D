@@ -22,7 +22,7 @@ else        % cruller
   ft = @(t,p) -wc*wm*sin(wm*t+wn*p); fp = @(t,p) -wc*wn*sin(wm*t+wn*p);
   so.b = {f,ft,fp};     % pass in instead of b param
 end
-so.np = 18; so.mp=round(so.np*2/3);  % panel # in major,minor directions
+so.np = 6; so.mp=round(so.np*2/3);  % panel # in major,minor directions
 o.nr = 2*o.p; o.nt = 2*o.nr;  % aux quad orders: radial and angular nodes
 % Dirichlet data for BVP: t-dep pulse func...
 incwave = 'plane';    % 'ptsrc' (lauched at t0) or 'plane' (hitting 0 at t0)
@@ -69,7 +69,7 @@ t.x = [xx(:)';0*xx(:)';zz(:)']; t.N=numel(xx);           % x-z plane of targs
 showsurffunc(s,0*x(1,:)); hold on; plot3(xs(1),xs(2),xs(3),'r.');
 plot3(t.x(1,:),t.x(2,:),t.x(3,:),'.'); drawnow
 
-t0=tic;
+t0=tic;    % fast but RAM-intensive version (np<=9 on 32GB laptop!)...
 tret = -dists(t.x,x);  % retarded times of surf nodes rel to ttarg, trg loc fast
 [jmax,jmin,a,ap] = interpmat(tret,dt,m);   % Tom's coeffs, 1 row per tret entry
 clear tret;   % hitting 30 GB even at np=9, why?
@@ -148,7 +148,7 @@ if verb>1  % 3d slice anim...
 end
 
 % ============================================================================
-if verb   % figs for paper... (will have to output PNG then convert to EPS)
+if verb   % subfigs a,b for paper...  (output PNG then convert to EPS)
   jx=37; jz=41; j=jz+numel(gz)*(jx-1); x0=xx(j); z0=zz(j);  % spatial pt
   fprintf('test pt x0=(%g,%g,%g)\n',x0,0,z0);
   t0s = [3.0, 7.0];           % two times, for (a) and (b)
@@ -171,16 +171,4 @@ if verb   % figs for paper... (will have to output PNG then convert to EPS)
     print('-dpng','-r600', [nam '.png']);
     system(['convert -trim ' nam '.png eps2:' nam '.eps']);
   end
-  l = load('../expts/wobblytorus/scattBVPconv.mat');  % by:gen_scattBVPconv.m
-  r = l.run{3};
-  figure; plot(r.tj,r.utot(jz+numel(gz)*(jx-1),:),'.-');   % signal
-  xlabel('$$t$$','interpreter','latex');
-  ylabel('$$u_{tot}(x_0,t)$$','interpreter','latex');
-  title('(c) \quad total wave signal at $$x_0$$', 'interpreter','latex');
-  set(gcf,'paperposition',[0 0 5 3]);
-  print -depsc2 scatt_sig.eps
-  
-  % (d) error convergence at x_0, t=3,  vs np = 6,9
-  % with dt = h.
-  % **** loop over runs
 end %=======

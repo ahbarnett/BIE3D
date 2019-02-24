@@ -89,7 +89,7 @@ for i=1:numel(nps)         % ======================== MAIN DX LOOP ========
   Sdottest = ap.*repmat(S(:),[1 n]); clear ap;
   Sdottest = sparse(reshape(permute(reshape(Sdottest,[t.N N n]),[1 3 2]),[t.N N*n]));
   else  % lower-RAM sparse fill of Stest, row by row, single assemble, etc...
-    nnzm = ceil(1.1*m*t.N*N);  ii1 = zeros(1,nnzm);    % sparse index lists
+    nnzm = ceil(1.1*(m+2)*t.N*N);  ii1 = zeros(1,nnzm);    % sparse index lists
     jj1=ii1;v1=ii1;ii2=ii1;jj2=ii1;v2=ii1;ii3=ii1;jj3=ii1;v3=ii1;
     p1=0;p2=0;p3=0;   % ptrs to sparse ind lists
     for it=1:t.N        % loop over test targs
