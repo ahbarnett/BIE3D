@@ -1,5 +1,5 @@
 % figure script for Volterra IE convergence for time-interp pred-corr scheme
-% Barnett 11/14/18, just a m-loop around test_volterra.m
+% Barnett 11/14/18, just a m-loop (note m=2q) around test_volterra.m
 %
 % We solve    u(t) + int_{t-1}^t u(s) ds = f(t),   for all t
 % ie 2nd-kind Volterra w/ unit top-hat kernel from 0 to 1 unit into the past.
@@ -8,9 +8,9 @@
 % be smooth, a requirement of the D-spline interp scheme.
 % Note we don't shuffle the solution; we write once into a long array.
 %
-% We learn order is empirically m+2, and that only the expected # p Gauss nodes
-% are needed, although when p is small (10, sufficient for om=5), there is
-% random error prefactor behavior but consistent with convergence order.
+% We learn order is empirically 2q+2 = m+2, and that only the expected # p
+% Gauss nodes are needed, although when p is small (10, sufficient for om=5),
+% there is random error prefactor behavior but consistent with convergence ord.
 
 clear
 %om = 3.0; soln = @(t) cos(om*t);    % soln u(t) fun, const freq om (eg 3, 10)
@@ -70,6 +70,8 @@ text(0.013,1e-3,'(b)');
 set(gcf,'paperposition',[0 0 4 3]);
 print -depsc2 volterra_conv.eps
 
+% plot of the q vector, showing D-splines totally unresolved by p-node rule...
+figure; plot(q); title('q vector at the min dt (note: unresolved but good)');
 
 
 %%%%%%

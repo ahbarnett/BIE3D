@@ -6,7 +6,7 @@ Main author:  Alex Barnett
 
 Contributions: Tom Hagstrom - f90 modules for interpolation from time grid.
 
-Version: 20181110
+Version: 20190329
 
 ### Dependencies
 
@@ -23,7 +23,7 @@ Download using `git`, `svn`, or as a zip (see green button above).
 
 Open MATLAB in the top level (`BIE3D`) directory, and run `bie3dsetup` to add all needed directories to your path. 
 
-Test by running `testall` which tests the Laplace case on a torus, and should produce lots of error outputs close to machine precision, convergent sequences of numbers, and some plots, and yet not crash.
+Test by running `testall` which currently tests Laplace quadratures on a torus, and should produce lots of error outputs close to machine precision, convergent sequences of numbers, and some plots, and yet not crash.
 
 
 ### Directories
@@ -33,6 +33,5 @@ Test by running `testall` which tests the Laplace case on a torus, and should pr
 `singquad` : special surface quadratures for weakly singular kernels  
 `utils`    : general numerical and plot utilities  
 `test`     : test codes (other than built-in self-tests)  
-`timedomainwaveeqn` : TDBIE for wave equation, in progress  
-`solvers` : 2D BVP solver example codes, also serve to test kernels  
-`doublyperiodic` : codes for doubly-periodic geometries  
+`timedomainwaveeqn` : time-domain integral-equations for acoustics codes (see [movie](http://users.flatironinstitute.org/~ahb/images/cruller_scatt_plane_pulse_m4_p6_np24_hi.mp4))  
+`doublyperiodic` : an old self-contained code for doubly-periodic Laplace dipoles in 3D  
