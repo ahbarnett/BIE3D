@@ -1,34 +1,44 @@
-function A = LapSLPmat(x,y,ny)
-% Dumb dense Laplace SLP matrix fill from sources to targets
-% Inputs:
-% x targ (3-by-M), y src (3-by-N)
+function [A An] = Lap3dSLPmat(t,s)
+% LAP3DSLPMAT.  dense Laplace SLP Nystrom eval matrix from sources to targets
 %
-% NB: fills M*N matrix, so assumes small cases
+% [A An] = Lap3dSLPmat(t,s)
+%
+% Inputs:
+%  s - source surface struct with fields:
+%      x (3*N) nodes, w (1*N) quadr weights
+%  t - target struct with fields:
+%      x (3*N) nodes, and, if An requested, nx (3*N) normals
+% Outputs:
+%  A - (M*N) matrix getting potentials from density values
+%  An - (M*N) matrix getting t.nx directional derivs from density values
+%
+% NB: fills M*N matrices, so assumes small cases. Faster if An not needed.
+%
+% Without args, does partial math test.
+%
+% For full test, see: ../test/test_LapGRF_torus_global.m
+%
+% Todo: * replace with C+omp MEX, combine with DLP case if needed together.
 
 % Barnett 8/16/19
 
-if nargin==0, test_LapDLPmat; return; end
+if nargin==0, test_Lap3dSLPmat; return; end
 
-d1 = bsxfun(@minus,x(1,:)',y(1,:));   % 3 coords of displacement matrix (M*N)
-d2 = bsxfun(@minus,x(2,:)',y(2,:));
-d3 = bsxfun(@minus,x(3,:)',y(3,:));
-rr = d1.^2+d2.^2+d3.^2;   % M*N
-ny = (1/4/pi) * ny;       % apply prefactor here, cheaper
-ddotn = bsxfun(@times,d1,ny(1,:))+bsxfun(@times,d2,ny(2,:))+bsxfun(@times,d3,ny(3,:));  % M*N
-A =  ddotn ./ (sqrt(rr).*rr);  % kernel matrix w/o 1/4pi or src quad weights
-%A = (1/4/pi) * A;
+d1 = bsxfun(@minus,t.x(1,:)',s.x(1,:)); % 3 coords of displacement matrix (M*N)
+d2 = bsxfun(@minus,t.x(2,:)',s.x(2,:));
+d3 = bsxfun(@minus,t.x(3,:)',s.x(3,:));
+rr = d1.^2+d2.^2+d3.^2;   % dist^2 mat
+A = bsxfun(@times, 1./sqrt(rr), s.w*(1/4/pi));  % including src quadr wei
+if nargout>1                  % targ deriv wanted
+  ddottn = bsxfun(@times,d1,t.nx(1,:)')+bsxfun(@times,d2,t.nx(2,:)')+bsxfun(@times,d3,t.nx(3,:)');
+  An = bsxfun(@times, ddottn./(sqrt(rr).*rr), s.w*(1/4/pi));  % monopole deriv, incl src quad wei
+end
 
-%%%%%%%%%
-function test_LapDLPmat
-ns = 5e3;
-nt = 1e4;
-y = randn(3,ns);
-ny = randn(3,ns); ny = bsxfun(@times,ny,1./sqrt(sum(ny.^2,1)));
-%norm(ny(:,1))-1
-x = randn(3,nt);
-tic;
-%profile clear; profile on
-A = LapDLPmat(x,y,ny);
-%profile off; profile viewer
-t=toc;
-fprintf('filled lap dipole pot mat %d*%d in %.3g s: %.3g Gels/s\n',nt,ns,t,ns*nt/t/1e9)
+function test_Lap3dSLPmat
+% math test for grad only: Gauss's Law on torus surface...
+t = setup_torus_doubleptr(1,0.5);
+xin = [0.9; -0.2; 0.1]; xout = [1.9; 0.7; 1.0];    % both "far" from surf
+s.x = [xin,xout]; s.w = 1;                         % source pointset
+[~,An] = Lap3dSLPmat(t,s);                         % this test ignores val
+fluxes = t.w * An;                                 % w is row, leaves row 2-vec
+fprintf('torus SLP An errs: int %.3g, ext %.3g\n',fluxes(1)-1,fluxes(2))

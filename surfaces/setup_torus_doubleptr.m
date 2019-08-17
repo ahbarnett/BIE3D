@@ -2,12 +2,12 @@ function s = setup_torus_doubleptr(a,b,Ns,o)
 % SETUP_TORUS_DOUBLEPTR.  analytic torus-like 3D surf, double global PTR quad
 %
 % s = setup_torus_doubleptr(a,b,Ns,o) creates double-PTR global quadrature
-%  of a (possibly modulated) torus.
+%  of a (possibly radius-modulated) torus.
 %
 % Definition of coord sys (coming from torusparam.m):
-%  1st coord (phi) goes CCW (viewed from above) around big circle, toroidal
-%  2nd coord (theta) takes up around little circle, poloidal
-%  (dp,dt,outwardsnormal) form a RH coord sys.
+%  1st coord (phi) goes CCW (viewed from above) around big circle, toroidal.
+%  2nd coord (theta) takes up around little circle, poloidal.
+%  Thus (dp,dt,outwardsnormal) form a RH coord sys.
 %
 % Inputs:
 %  a - major radius
@@ -54,15 +54,15 @@ function test_setup_torus_doubleptr        % only plain torus for now
 disp('plain torus double PTR quadr test:')
 s = setup_torus_doubleptr(1,0.5);
 figure; plot3(s.x(1,:),s.x(2,:),s.x(3,:),'.','markersize',1); axis equal vis3d
-fprintf('default N=[%d,%d]: surf area err = %.3g\n',s.Nb,s.Na,sum(s.w) - 2*pi^2)
+fprintf('default N=[%d,%d]: surf area err = %.3g\n',s.Na,s.Nb,sum(s.w) - 2*pi^2)
 
 disp('Gauss'' law flux convergence...')
 zo = [0.9; -0.2; 0.1];    % src pt, must be inside the shape
 hold on; plot3(zo(1),zo(2),zo(3),'k.','markersize',20);
-for Nb = 10:10:50, Na = ceil(2.0*Nb);
-  s = setup_torus_doubleptr(1,0.5,[Nb,Na]);
+for Na = 20:20:60, Nb = ceil(0.5*Na);      % tie minor discr to major
+  s = setup_torus_doubleptr(1,0.5,[Na,Nb]);
   d = bsxfun(@minus,s.x,zo); r = sqrt(sum(d.^2,1));
   ddotn = sum(d.*s.nx,1);
   flux = sum(s.w.*ddotn./r.^3)/(4*pi);   % surf flux of monopole at zo
-  fprintf('N=[%d,%d]:  \terr = %.3g\n',Nb,Na,flux - 1.0);
+  fprintf('N=[%d,%d]:  \terr = %.3g\n',Na,Nb,flux - 1.0);
 end

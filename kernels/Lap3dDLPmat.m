@@ -37,14 +37,14 @@ end
 
 %%%%%%%%%
 function test_Lap3dDLPmat
-% math test: Gauss's Law from torus-like surface...
+% math test: tau=-1 GRF for torus surface...
 s = setup_torus_doubleptr(1,0.5);
-xin = [0.9; -0.2; 0.1]; xout = [1.9; -0.2; 0.1];   % both "far" from surf
+xin = [0.9; -0.2; 0.1]; xout = [1.9; 0.7; 1.0];    % both "far" from surf
 t.x = [xin,xout]; t.nx = randn(3,2);               % target pointset, rand n
 tau = -ones(s.N,1);           % DLP density
 [A An] = Lap3dDLPmat(t,s);
 u=A*tau; un=An*tau;
-fprintf('torus DLP[-1] errs (val,grad): int (%.3g,%.3g), ext (%.3g,%.3g)\n',u(1)-1,un(1),u(2),un(2))
+fprintf('torus DLP[-1] errs (val,grad): int %.3g,%.3g, ext %.3g,%.3g\n',u(1)-1,un(1),u(2),un(2))
 
 disp('timing test...')
 ns = 5e3;
