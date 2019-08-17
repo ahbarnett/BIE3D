@@ -1,12 +1,11 @@
-function A = LapDLPmat(x,y,ny)
-% Dumb dense Laplace DLP matrix fill from sources to targets
+function A = LapSLPmat(x,y,ny)
+% Dumb dense Laplace SLP matrix fill from sources to targets
 % Inputs:
-% x targ (3-by-M), y src, ny src normals (both 3-by-N)
+% x targ (3-by-M), y src (3-by-N)
 %
 % NB: fills M*N matrix, so assumes small cases
-%
-% Without args, does timing test
-% Barnett 8/1/19
+
+% Barnett 8/16/19
 
 if nargin==0, test_LapDLPmat; return; end
 
