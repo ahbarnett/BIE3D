@@ -38,18 +38,25 @@ end
 %%%%%%%%%
 function test_Lap3dDLPmat
 % math test: Gauss's Law from torus-like surface...
+s = setup_torus_doubleptr(1,0.5);
+xin = [0.9; -0.2; 0.1]; xout = [1.9; -0.2; 0.1];   % both "far" from surf
+t.x = [xin,xout]; t.nx = randn(3,2);               % target pointset, rand n
+tau = -ones(s.N,1);           % DLP density
+[A An] = Lap3dDLPmat(t,s);
+u=A*tau; un=An*tau;
+fprintf('torus DLP[-1] errs (val,grad): int (%.3g,%.3g), ext (%.3g,%.3g)\n',u(1)-1,un(1),u(2),un(2))
 
-
-% timing test...
+disp('timing test...')
 ns = 5e3;
 nt = 1e4;
-s.x = randn(3,ns);
+s = []; s.x = randn(3,ns); s.w = ones(1,ns);
 s.nx = randn(3,ns); s.nx = bsxfun(@times,s.nx,1./sqrt(sum(s.nx.^2,1)));
 %norm(s.nx(:,1))-1
-t.x = randn(3,nt);
+t.x = randn(3,nt); t.nx = randn(3,nt);
 tic;
 %profile clear; profile on
 A = Lap3dDLPmat(t,s);
+%[A An] = Lap3dDLPmat(t,s);   % twice as slow, understandably
 %profile off; profile viewer
 t=toc;
 fprintf('filled lap dipole pot mat %d*%d in %.3g s: %.3g Gels/s\n',nt,ns,t,ns*nt/t/1e9)
