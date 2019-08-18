@@ -15,8 +15,8 @@ function [A An] = Lap3dDLPmat(t,s)
 % NB: fills M*N matrices, so assumes small cases. Faster if An not needed.
 %
 % Without args, does math then timing test.
-% Todo: * replace with C+omp MEX.
 
+% Todo: * replace with C+omp MEX.
 % Barnett 8/16/19
 
 if nargin==0, test_Lap3dDLPmat; return; end
