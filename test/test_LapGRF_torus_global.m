@@ -1,5 +1,5 @@
 % off-surface Green's rep formula test for any torus quadrature
-% Barnett 9/16/19
+% Barnett 8/16/19
 clear
 
 % interior Laplace soln: cols in R3 mapped to values (row vec), and grad f...
@@ -20,5 +20,3 @@ for Na = 20:20:60, Nb = ceil(0.5*Na);      % tie minor discr to major
   ud = Sd*sigma + Dd*tau;
   fprintf('N=[%d,%d] errs (val,grad):\tint %.3g,%.3g\text %.3g,%.3g\n',Na,Nb,u(1)-uex,ud(1)-udex,u(2),ud(2))   % int GRF gives zero outside
 end
-
-% *** to debug: exterior vals
