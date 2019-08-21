@@ -3,7 +3,7 @@
 clear
 
 % interior Laplace soln: cols in R3 mapped to values (row vec), and grad f...
-lam = 1.0; f = @(x) exp(lam*x(1,:)).*cos(lam*x(2,:));
+lam = 1.1; f = @(x) exp(lam*x(1,:)).*cos(lam*x(2,:));
 gradf = @(x) [lam*f(x); -lam*exp(lam*x(1,:)).*sin(lam*x(2,:)); 0*f(x)];
 fprintf('did we get analytic grad f right? yes: %.3g\n',checkgrad(f,gradf))
 
@@ -11,7 +11,7 @@ a=1.0; b=0.5;   % torus shape
 xin = [0.9; -0.2; 0.1]; xout = [1.9; 0.7; 1.0];   % both "far" from surf
 t.x = [xin,xout]; t.nx = randn(3,2);            % random target direc derivs
 uex = f(t.x(:,1)); udex = t.nx(:,1)'*gradf(t.x(:,1));   % exact (val,dderiv)
-for Na = 20:20:60, Nb = ceil(0.5*Na);      % tie minor discr to major
+for Na = 20:20:80, Nb = ceil(0.5*Na);      % tie minor discr to major
   s = setup_torus_doubleptr(a,b,[Na,Nb]);
   sigma = sum(s.nx.*gradf(s.x),1)'; tau = -f(s.x)';  % dens, int GRF (col vecs)
   [S Sd] = Lap3dSLPmat(t,s);
