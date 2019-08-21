@@ -8,6 +8,7 @@ gradf = @(x) [lam*f(x); -lam*exp(lam*x(1,:)).*sin(lam*x(2,:)); 0*f(x)];
 fprintf('did we get analytic grad f right? yes: %.3g\n',checkgrad(f,gradf))
 
 a=1.0; b=0.5;   % torus shape
+% b = cruller(b,0.1,5,3); % optional, tougher test
 xin = [0.9; -0.2; 0.1]; xout = [1.9; 0.7; 1.0];   % both "far" from surf
 t.x = [xin,xout]; t.nx = randn(3,2);            % random target direc derivs
 uex = f(t.x(:,1)); udex = t.nx(:,1)'*gradf(t.x(:,1));   % exact (val,dderiv)

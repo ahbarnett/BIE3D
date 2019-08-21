@@ -60,7 +60,7 @@ for shape = 0:1
     b = cruller(b,0.1,5,3);    % replaces b
   end
   s = setup_torus_doubleptr(a,b);
-  figure; plot3(s.x(1,:),s.x(2,:),s.x(3,:),'.','markersize',1); axis equal vis3d
+  figure; showsurf(s,'b',struct('alpha',0.2)); lightangle(45,0);
   if shape==0, fprintf('default N=[%d,%d]: surf area err = %.3g\n',s.Na,s.Nb,sum(s.w) - 2*pi^2), end
   
   disp('Gauss'' law flux convergence...')

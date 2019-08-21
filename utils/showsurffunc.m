@@ -10,7 +10,9 @@ function [h h2] = showsurffunc(s, f, o)
 %      or: global surface struct, with fields x, etc.
 %  f = list (any shape) of real function values on the nodes s.x.
 %  Automatically decides if 1-sided or symmetrized colorscale is best.
-% Outputs: h - handle to surface, h2 - handle to colorbar
+% Outputs:
+%  h - handle to surface
+%  h2 - handle to colorbar
 %
 % o controls opts:
 %  o.sc = sets color scale
@@ -31,8 +33,6 @@ e = 1;   % 1 if extra row & co needed for sealing up (closed surf)
 if isstruct(s)                           % global, torus
   fr=reshape(f,[s.Na s.Nb]);
   [X,Y,Z,f] = deal(nan(s.Na+e, s.Nb+e));  % NB f gets overwritten
-  size(s.x(1,:))
-  size(X(1:s.Na,1:s.Nb))
   X(1:s.Na,1:s.Nb) = reshape(s.x(1,:),[s.Na s.Nb]);
   Y(1:s.Na,1:s.Nb) = reshape(s.x(2,:),[s.Na s.Nb]);
   Z(1:s.Na,1:s.Nb) = reshape(s.x(3,:),[s.Na s.Nb]);
