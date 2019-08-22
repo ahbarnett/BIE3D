@@ -8,6 +8,7 @@ interpmat_1d
 tensorprod_interp
 
 % surfaces
+setupdoubleptr
 setup_torus_doubleptr
 create_panels
 test_wobblytorus

@@ -31,13 +31,15 @@ s.u = (0:Nu-1)'/Nu*2*pi; s.v = (0:Nv-1)'/Nv*2*pi;  % u,v grids, 0-offset
 [uu vv] = ndgrid(s.u, s.v);
 uu = uu(:)'; vv = vv(:)';   % since s.Z, cross, etc only vectorize along rows 
 s.x = s.Z(uu,vv);
-s.xu = s.Zu(uu,vv);
-s.xv = s.Zv(uu,vv);
-s.nx = cross(s.xu, s.xv);       % outward normal
-s.sp = sqrt(sum(s.nx.^2,1));    % "speeds"
-s.nx = bsxfun(@times,s.nx,1./s.sp);   % unit normal
-s.w = (2*pi/Nu)*(2*pi/Nv) * s.sp;   % quad weights incl speed
-
+if isfield(s,'Zu')          % allows a nodes-only surface to be formed
+  s.xu = s.Zu(uu,vv);
+  s.xv = s.Zv(uu,vv);
+  s.nx = cross(s.xu, s.xv);       % outward normal
+  s.sp = sqrt(sum(s.nx.^2,1));    % "speeds"
+  s.nx = bsxfun(@times,s.nx,1./s.sp);   % unit normal
+  s.w = (2*pi/Nu)*(2*pi/Nv) * s.sp;   % quad weights incl speed
+end
+  
 %%%%%%%%
 function test_setupdoubleptr
 a=1.0; b= 0.5; s = modulatedtorus(a,b);

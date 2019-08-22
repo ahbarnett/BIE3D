@@ -19,7 +19,7 @@ if nargin<3, o=[]; end
 if ~isfield(o,'normals'),o.normals=1; end  
 
 h = plot3(s.x(1,:),s.x(2,:),s.x(3,:),[c '.'],'markersize',2);       % pts
-if o.normals
+if o.normals & isfield(s,'nx')
   hold on;
   y = s.x + 0.1*s.nx;
   plot3([s.x(1,:);y(1,:)],[s.x(2,:);y(2,:)],[s.x(3,:);y(3,:)],[c '-']);

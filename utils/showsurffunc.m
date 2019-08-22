@@ -31,11 +31,11 @@ if sum(f<0)==0, cs = [0 o.sc]; else cs = o.sc*[-1 1]; end
 % set up arrays, including wrapping to close the surface...
 e = 1;   % 1 if extra row & co needed for sealing up (closed surf)
 if isstruct(s)                           % global, torus
-  fr=reshape(f,[s.Na s.Nb]);
-  [X,Y,Z,f] = deal(nan(s.Na+e, s.Nb+e));  % NB f gets overwritten
-  X(1:s.Na,1:s.Nb) = reshape(s.x(1,:),[s.Na s.Nb]);
-  Y(1:s.Na,1:s.Nb) = reshape(s.x(2,:),[s.Na s.Nb]);
-  Z(1:s.Na,1:s.Nb) = reshape(s.x(3,:),[s.Na s.Nb]);
+  fr=reshape(f,[s.Nu s.Nv]);
+  [X,Y,Z,f] = deal(nan(s.Nu+e, s.Nv+e));  % NB f gets overwritten
+  X(1:s.Nu,1:s.Nv) = reshape(s.x(1,:),[s.Nu s.Nv]);
+  Y(1:s.Nu,1:s.Nv) = reshape(s.x(2,:),[s.Nu s.Nv]);
+  Z(1:s.Nu,1:s.Nv) = reshape(s.x(3,:),[s.Nu s.Nv]);
 elseif strcmp(s{1}.topo,'torus')         % panels, the case we know: torus
   np = s{1}.np; mp = s{1}.mp; q=s{1}.p; x = s{1}.t(2,1:q); n=size(s{1}.t,2);
   npan = mp*np;
