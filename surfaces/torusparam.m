@@ -1,7 +1,11 @@
-function [x nx sp dp dt] = torusparam(a,b,p,t,o)
+function [x nx sp] = torusparam(a,b,p,t,o)
 % TORUSPARAM - return coords, unit normal and speed at params (phi,theta)
 %
-% [x nx sp dp dt] = torusparam(a,b,p,t).
+% Warning: this is somewhat obsolete, kept only for panels & timedomainwaveeqn.
+% Prefer: modulatedtorus (which contains the analytic functions), and
+%         setupdoubleptr (which shows how to set up nodes from analytic funcs).
+%
+% [x nx sp] = torusparam(a,b,p,t).
 %  Inputs:
 %  p,t are phi and theta, and should be row vectors if multiple points wanted
 %  a is major radius
@@ -15,10 +19,7 @@ function [x nx sp dp dt] = torusparam(a,b,p,t,o)
 %  2nd coord (theta) takes up around little circle, poloidal
 % (dp,dt,outwardsnormal) form a RH coord sys.
 %
-% sp = dp * dt
-% dt is magnitude of dr/dt vector; dp mag of dr/dp vector.
-%
-% [x nx sp dp dt] = torusparam(a,b,p,t,o) allows opts eg
+% [x nx sp] = torusparam(a,b,p,t,o) allows opts eg
 % o.f, o.fp, o.ft handles to modulation func (poloidal radius vs theta,phi),
 % and its partials, which must be correct.
 
