@@ -68,6 +68,7 @@ shading interp; xlabel('x'); ylabel('y'); zlabel('z');
 if newfig, lightangle(45,0); end
 axis equal vis3d; 
 h2 = colorbar; colormap(jet(256)); caxis(cs);
+set(gca,'clipping','off');
 
 %%%%%%%%%%%%
 function test_showsurffunc

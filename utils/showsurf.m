@@ -41,3 +41,4 @@ if isfield(o,'alpha')    % add surface
 end  
 axis equal vis3d
 xlabel('x'); ylabel('y'); zlabel('z');
+set(gca,'clipping','off');

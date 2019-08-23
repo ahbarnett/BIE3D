@@ -17,10 +17,8 @@ s = setupdoubleptr(s,Ns);
 function test_setup_torus_doubleptr
 for shape = 0:1
   a = 1.0; b = 0.5;       % baseline torus params
-  if shape==0
-    disp('plain torus double PTR quadr test:')
-  else
-    disp('cruller double PTR quadr test:')
+  if shape==0, disp('plain torus double PTR quadr test:')
+  else, disp('cruller double PTR quadr test:')
     b = cruller(b,0.1,5,3);    % replaces b
   end
   s = setup_torus_doubleptr(a,b);
