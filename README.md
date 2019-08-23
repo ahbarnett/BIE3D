@@ -8,6 +8,8 @@ Contributions: Tom Hagstrom - f90 modules for interpolation from time grid.
 
 Version: 20190821
 
+![cruller with panel quadrature and on-surface singular scheme](pics/cruller_panelquad.png)
+
 ### Dependencies
 
 MATLAB. Codes have not been tested on MATLAB versions prior to R2012a.
