@@ -1,11 +1,13 @@
 % complete set of tests for BIE3D. All should produce small numbers &
 % occasional figures and tables.
-% Barnett 7/19/16; updated 8/19 for global.
+% Barnett 7/19/16 for panel stuff; updated 8/22/19 for global quad stuff.
 
 % utils (directory)
 checkgrad
 interpmat_1d
 tensorprod_interp
+peri2dspecinterp
+showsurffunc
 
 % surfaces
 setupdoubleptr
