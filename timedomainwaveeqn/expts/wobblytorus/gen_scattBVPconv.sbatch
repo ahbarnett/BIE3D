@@ -8,5 +8,5 @@
 
 module load matlab/R2018a
 
-cd ~/BIE3D/timedomainwaveeqn/paper
+cd ~/BIE3D/timedomainwaveeqn/expts/wobblytorus
 matlab -nodesktop -nosplash < gen_scattBVPconv.m
