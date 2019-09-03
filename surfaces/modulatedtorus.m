@@ -27,3 +27,4 @@ else                 % modulated torus
   s.Zu = @(p,t) [-(a+f(p,t).*cos(t)).*sin(p)+fp(p,t).*cos(t).*cos(p); (a+f(p,t).*cos(t)).*cos(p) + fp(p,t).*cos(t).*sin(p); fp(p,t).*sin(t)];
   s.Zv = @(p,t) [(-f(p,t).*sin(t) + ft(p,t).*cos(t)).*cos(p); (-f(p,t).*sin(t)+ft(p,t).*cos(t)).*sin(p); f(p,t).*cos(t)+ft(p,t).*sin(t)];
 end
+s.topo = 't';   % torus type

@@ -8,12 +8,13 @@ function [h h2] = showsurf(s,c,o)
 %
 % h = showsurf(s,c,o) controls various options:
 %  o.normals = 0 (no normals), 1 (show normals, default).
-%  o.alpha in [0,1], adds alpha-transparent surface (alpha=1 opaque), in the
-%   case of torus-like topology. [h h2] = showsurf(...) returns h2 surf handle.
+%  o.alpha in [0,1], adds alpha-transparent surface (alpha=1 opaque), if it
+%  can read s.topo giving the topology (torus, sphere,...)
+% [h h2] = showsurf(...) returns h2 surf handle.
 %
 % See for test: self-test for setupdoubleptr
 
-% Barnett 8/21/19
+% Barnett 8/21/19, 9/3/19 for sphere topo.
 if nargin<2, c = 'k'; end
 if nargin<3, o=[]; end
 if ~isfield(o,'normals'),o.normals=1; end  
@@ -25,14 +26,28 @@ if o.normals & isfield(s,'nx')
   plot3([s.x(1,:);y(1,:)],[s.x(2,:);y(2,:)],[s.x(3,:);y(3,:)],[c '-']);
 end  
 if isfield(o,'alpha')    % add surface
-  nu = s.Nu+1; nv = s.Nv+1;
-  [X,Y,Z] = deal(nan(nu,nv));
-  X(1:s.Nu,1:s.Nv) = reshape(s.x(1,:),[s.Nu s.Nv]);
-  Y(1:s.Nu,1:s.Nv) = reshape(s.x(2,:),[s.Nu s.Nv]);
-  Z(1:s.Nu,1:s.Nv) = reshape(s.x(3,:),[s.Nu s.Nv]);  
-  X(:,end) = X(:,1); X(end,:) = X(1,:); X(end,end) = X(1,1);
-  Y(:,end) = Y(:,1); Y(end,:) = Y(1,:); Y(end,end) = Y(1,1);
-  Z(:,end) = Z(:,1); Z(end,:) = Z(1,:); Z(end,end) = Z(1,1);
+  if s.topo=='t'         % torus-like
+    nu = s.Nu+1; nv = s.Nv+1;
+    [X,Y,Z] = deal(nan(nu,nv));
+    X(1:s.Nu,1:s.Nv) = reshape(s.x(1,:),[s.Nu s.Nv]);
+    Y(1:s.Nu,1:s.Nv) = reshape(s.x(2,:),[s.Nu s.Nv]);
+    Z(1:s.Nu,1:s.Nv) = reshape(s.x(3,:),[s.Nu s.Nv]);  
+    X(:,end) = X(:,1); X(end,:) = X(1,:); X(end,end) = X(1,1);
+    Y(:,end) = Y(:,1); Y(end,:) = Y(1,:); Y(end,end) = Y(1,1);
+    Z(:,end) = Z(:,1); Z(end,:) = Z(1,:); Z(end,end) = Z(1,1);
+  elseif s.topo=='s'     % sphere-like
+    nu = s.Nu+1; nv = s.Nv+2;
+    [X,Y,Z] = deal(nan(nu,nv));
+    X(1:nu-1,2:nv-1) = reshape(s.x(1,:),[s.Nu s.Nv]);
+    Y(1:nu-1,2:nv-1) = reshape(s.x(2,:),[s.Nu s.Nv]);
+    Z(1:nu-1,2:nv-1) = reshape(s.x(3,:),[s.Nu s.Nv]);
+    npole = s.Z(0,1); spole = s.Z(0,-1);     % assumes analytic avail
+    X(:,1) = spole(1); Y(:,1) = spole(2); Z(:,1) = spole(3);   % patch the poles
+    X(:,end) = npole(1); Y(:,end) = npole(2); Z(:,end) = npole(3);
+    X(end,:) = X(1,:);   % wrap in u
+    Y(end,:) = Y(1,:);
+    Z(end,:) = Z(1,:);
+  end
   linecol = get(h,'Color'); linecol = linecol(:)';  % row vec
   C = kron(linecol,ones(nu,nv));   % same color all vertices
   C = reshape(C,[nu,nv,3]);
