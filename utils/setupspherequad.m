@@ -12,6 +12,7 @@ function s = setupspherequad(s,Ns,o)
 %   o.tensor = 1 (tensor prodcut quadrature, uses pi/2 factor more nodes than
 %                 necessary, but simpler), 0 (Nu scaled with elevation, as for a
 %                 sphere; more bookkeeping but quasi-optimal).
+%   o.extraunodes, o.minunodes - settings affecting small rings for o.tensor=0.
 %
 % Output struct s has new node-info fields including:
 %  s.x - (3*N) node locs in R3
@@ -33,7 +34,8 @@ if nargin==0, test_setupspherequad; return; end
 if nargin<2 || isempty(Ns), Ns = [60,30]; end
 if nargin<3, o=[]; end
 if ~isfield(o,'tensor'), o.tensor=1; end    % default
-if ~isfield(o,'extraunodes'), o.extraunodes=3; end  % how many above sin(th) val
+if ~isfield(o,'extraunodes'), o.extraunodes=0; end  % how many above sin(th) val
+if ~isfield(o,'minunodes'), o.minunodes=8; end     % handles small rings
 
 Nv=ceil(Ns(2)/2)*2;    % make even
 [s.v s.vw] = gauss(Nv);  % u,v grids (0-offset in u)
@@ -44,7 +46,8 @@ if o.tensor
   [uu vv] = ndgrid(s.u, s.v);   % tensor prod
   uu = uu(:)'; vv = vv(:)';   % since s.Z, cross, etc, only vectorize along rows 
 else
-  Nu = ceil(o.extraunodes + Ns(1)*sqrt(1-s.v(:).^2));  % scale like sin(theta)
+  Nu = ceil(o.extraunodes + Ns(1)*sqrt(1-s.v(:).^2));  % list, scale ~ sin(theta)
+  Nu = sqrt(o.minunodes^2 + Nu.^2);     % soft version of max(o.minunodes,Nu)
   Nu = ceil(Nu/2)*2;     % make all even
   N = sum(Nu);
   uu = nan(1,N); vv=uu;  % alloc output arrays
@@ -99,7 +102,7 @@ for shape = 0:1
       d = bsxfun(@minus,s.x,zo); r = sqrt(sum(d.^2,1));
       ddotn = sum(d.*s.nx,1);
       flux = sum(s.w.*ddotn./r.^3)/(4*pi);      % surf flux of monopole at zo
-      fprintf('N=[%d,%d]:  \terr = %.3g\n',Nu,Nv,flux - 1.0);
+      fprintf('N=[%d,%d], N=%d:  \terr = %.3g\n',Nu,Nv,s.N,flux - 1.0);
     end
   end
 end
