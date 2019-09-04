@@ -83,12 +83,12 @@ end
 function test_setupspherequad     % tests with sphere, ellipsoid; two quad types
 figure;
 for shape = 0:1
-  if shape==0, disp('sphere'); s = ellipsoid(1,1);
-  else, disp('ellipsoid'); s = ellipsoid(1.5,2); end
+  if shape==0, disp('sphere'); s = ellipsoid(1,1,1);
+  else, disp('ellipsoid'); s = ellipsoid(0.9,1.4,2); end
   for tensor=[1 0]
     o.tensor = tensor; fprintf('tensor=%d:\n',tensor)
     s = setupspherequad(s,[],o);
-    subplot(2,2,1+shape+2*tensor);
+    tsubplot(2,2,1+shape+2*tensor);
     showsurf(s,'b',struct('alpha',0.2)); lightangle(45,0);
     if shape==0, fprintf('default N=[%d,%d]: surf area err = %.3g\n',max(s.Nu),s.Nv,sum(s.w) - 4*pi); end
     disp('Gauss'' law flux convergence...')
@@ -103,3 +103,4 @@ for shape = 0:1
     end
   end
 end
+set(gcf,'name','sphere & ellipsoid, quasi-uniform and tensor-prod quads');
