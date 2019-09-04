@@ -8,9 +8,10 @@ interpmat_1d
 tensorprod_interp
 peri2dspecinterp
 showsurffunc
+setupdoubleptr
+setupspherquad
 
 % surfaces
-setupdoubleptr
 setup_torus_doubleptr
 create_panels
 test_wobblytorus
