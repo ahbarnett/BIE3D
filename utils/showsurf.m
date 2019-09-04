@@ -25,6 +25,9 @@ if o.normals & isfield(s,'nx')
   y = s.x + 0.1*s.nx;
   plot3([s.x(1,:);y(1,:)],[s.x(2,:);y(2,:)],[s.x(3,:);y(3,:)],[c '-']);
 end  
+axis equal vis3d
+xlabel('x'); ylabel('y'); zlabel('z');
+set(gca,'clipping','off');
 if isfield(o,'alpha')    % add surface
   if s.topo=='t'         % torus-like
     nu = s.Nu+1; nv = s.Nv+1;
@@ -36,17 +39,22 @@ if isfield(o,'alpha')    % add surface
     Y(:,end) = Y(:,1); Y(end,:) = Y(1,:); Y(end,end) = Y(1,1);
     Z(:,end) = Z(:,1); Z(end,:) = Z(1,:); Z(end,end) = Z(1,1);
   elseif s.topo=='s'     % sphere-like
-    nu = s.Nu+1; nv = s.Nv+2;
-    [X,Y,Z] = deal(nan(nu,nv));
-    X(1:nu-1,2:nv-1) = reshape(s.x(1,:),[s.Nu s.Nv]);
-    Y(1:nu-1,2:nv-1) = reshape(s.x(2,:),[s.Nu s.Nv]);
-    Z(1:nu-1,2:nv-1) = reshape(s.x(3,:),[s.Nu s.Nv]);
-    npole = s.Z(0,1); spole = s.Z(0,-1);     % assumes analytic avail
-    X(:,1) = spole(1); Y(:,1) = spole(2); Z(:,1) = spole(3);   % patch the poles
-    X(:,end) = npole(1); Y(:,end) = npole(2); Z(:,end) = npole(3);
-    X(end,:) = X(1,:);   % wrap in u
-    Y(end,:) = Y(1,:);
-    Z(end,:) = Z(1,:);
+    if numel(s.Nu)==1    % tensor-prod case
+      nu = s.Nu+1; nv = s.Nv+2;
+      [X,Y,Z] = deal(nan(nu,nv));
+      X(1:nu-1,2:nv-1) = reshape(s.x(1,:),[s.Nu s.Nv]);
+      Y(1:nu-1,2:nv-1) = reshape(s.x(2,:),[s.Nu s.Nv]);
+      Z(1:nu-1,2:nv-1) = reshape(s.x(3,:),[s.Nu s.Nv]);
+      npole = s.Z(0,1); spole = s.Z(0,-1);     % assumes analytic avail
+      X(:,1) = spole(1); Y(:,1) = spole(2); Z(:,1) = spole(3);   % patch the poles
+      X(:,end) = npole(1); Y(:,end) = npole(2); Z(:,end) = npole(3);
+      X(end,:) = X(1,:);   % wrap in u
+      Y(end,:) = Y(1,:);
+      Z(end,:) = Z(1,:);
+    else
+      warning('dont know how to show non-tensor-prod sphere-like as surf!');
+      return
+    end
   end
   linecol = get(h,'Color'); linecol = linecol(:)';  % row vec
   C = kron(linecol,ones(nu,nv));   % same color all vertices
@@ -54,6 +62,3 @@ if isfield(o,'alpha')    % add surface
   h2 = surf(X,Y,Z,C,'FaceAlpha',o.alpha,'edgecolor','none');
   set(h2,'ambientstrength',0.7,'facelighting','gouraud');
 end  
-axis equal vis3d
-xlabel('x'); ylabel('y'); zlabel('z');
-set(gca,'clipping','off');
