@@ -20,16 +20,16 @@ if N==n, g = f; return; end   % trivial case!
 if mod(N(1),2)~=0 || mod(N(2),2)~=0 || mod(n(1),2)~=0 || mod(n(2),2)~=0, warning('The two dims of both N and n must be even; sorry'); end
 F = fft2(f);
 % dim 1: pad or trunc? (note: unlike in 1D case, can also leave dim as is)
-if N(1)>n(1)        % upsample
+if N(1)>n(1)        % upsample (real stays real)
   F = [F(1:n(1)/2,:); F(n(1)/2+1,:)/2; zeros(N(1)-n(1)-1,n(2)); F(n(1)/2+1,:)/2; F(n(1)/2+2:end,:)];
-else                % downsample or stay same
-  F = [F(1:N(1)/2,:); F(end-N(1)/2+1:end,:)];
+else                % downsample or stay same (real stays real)
+  F = [F(1:N(1)/2,:); (F(N(1)/2+1,:)+F(end-N(1)/2+1,:))/2; F(end-N(1)/2+2:end,:)];
 end
 % dim 2: pad or trunc? (note: unlike in 1D case, can also leave dim as is)
 if N(2)>n(2)        % upsample
   F = [F(:,1:n(2)/2) F(:,n(2)/2+1)/2 zeros(N(1),N(2)-n(2)-1) F(:,n(2)/2+1)/2 F(:,n(2)/2+2:end)];
 else                % downsample or stay same
-  F = [F(:,1:N(2)/2) F(:,end-N(2)/2+1:end)];
+  F = [F(:,1:N(2)/2) (F(:,N(2)/2+1)+F(:,end-N(2)/2+1))/2 F(:,end-N(2)/2+2:end)];
 end
 g = ifft2(F)*prod(N./n);   % go back, factors from the ifft
 

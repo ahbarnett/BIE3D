@@ -11,7 +11,7 @@ function g = intxperiinterp(f,N,Y,n,y)
 %       |x=0              |x=2pi
 %  where the f values are ordered fast along each row, where the ith row
 %  is a 0-indexed periodic grid for [0,2pi) with n(i) points, and the vertical
-%  coordinate of all nodes in the ith row is y(i).
+%  coordinate of all nodes in the ith row is -1 <= y(i) <= 1.
 %  The output is a list of values g interpolated to a grid of similar form
 %  given by lists N and Y.
 %
@@ -20,9 +20,9 @@ function g = intxperiinterp(f,N,Y,n,y)
 %
 %  Naming: "intxperi" = interval cross periodic = [-1,1] x [0,2pi)  = Y x X
 %
-% See also: BIE3D/utils/peri2dspecinterp
+% See also: BIE3D/utils/peri2dspecinterp, intxperieval, intxperiinterpmat
 
-% Barnett 9/4/19
+% Alex Barnett 9/4/19
 if nargin==0, test_intxperiinterp; return; end
 if sum(mod(n,2)~=0)>0, error('all n must be even!'); end
 if sum(mod(N,2)~=0)>0, error('all N must be even!'); end
@@ -34,9 +34,10 @@ fhat = zeros(M,ny);   % 2d DFT coeffs. fast direc is x, so make col
 off = 0;
 for i=1:ny
   fihat = fft(f(off+(1:n(i)))) / n(i);    % note quadr weight 1/n(i) for Euler-F
-  k = min(n(i),M)/2;          % half-size to copy (upsample: k=n(i)/2, etc)
-  fhat(1:k,i) = fihat(1:k);   % pos freqs   *** to do: symmetrize freq n(i)/2
-  fhat(end-k+1:end,i) = fihat(end-k+1:end);  % neg freqs
+  if M>n(i)           % upsample
+    fhat(:,i) = [fihat(1:n(i)/2); fihat(n(i)/2+1)/2; zeros(M-n(i)-1,1); fihat(n(i)/2+1)/2; fihat(n(i)/2+2:end)];
+  else                % downsample or stay same
+  end
   off = off + n(i);
 end
 % STEP 2: interpolate the DFT coeffs array in y, for each k_x coeff
@@ -53,17 +54,6 @@ for i=1:NY
   k = N(i)/2;          % half-size for output grid (size 2k ifft)
   g(off+(1:N(i))) = ifft([ghat(1:k,i); ghat(end-k+1:end,i)]) * N(i);  % wei N(i)
   off = off + N(i);
-end
-
-%%%%%% helper for test
-function f = intxperieval(fun,n,y)
-% eval fun handle (x,y) for y given nodes, x periodic n(i)-grid for each y(i)
-f = nan(1,sum(n));
-off = 0;
-for i=1:numel(n)
-  x = 2*pi*(0:n(i)-1)/n(i);      % note 0-offset!
-  f(off+(1:n(i))) = fun(x,y(i));
-  off = off + n(i);
 end
 
 %%%%%%
