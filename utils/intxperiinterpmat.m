@@ -35,7 +35,7 @@ for i=1:ny                    % loop over input rings
   else                % downsample or stay same (average makes symm, real->real)
     F = [F(1:M/2,:); (F(M/2+1,:)+F(end-M/2+1,:))/2; F(end-M/2+2:end,:)];
   end
-  B(:,off+(1:n(i))) = LxI(:,M*(i-1)+(1:M)) * F;   % now B xforms vals to F coefs
+  B(:,off+(1:n(i))) = LxI(:,M*(i-1)+(1:M)) * F;  % dominant, B takes vals -> F co
   off = off + n(i);
 end
 % Fill blk rows of A by hit blk rows of B with small DFT mats from left...
@@ -46,7 +46,7 @@ for j=1:NY                    % loop over output rings, converting F coef to val
   if N(j)<M                   % downsample (average makes symm, real->real)
     F = [F(:,1:N(j)/2), F(:,N(j)/2+1)/2, zeros(N(j),M-N(j)-1), F(:,N(j)/2+1)/2, F(:,N(j)/2+2:end)];
   end
-  A(off+(1:N(j)),:) = F * B(M*(j-1)+(1:M),:);
+  A(off+(1:N(j)),:) = F * B(M*(j-1)+(1:M),:);  % dominant
   off = off + N(j);
 end
 
@@ -71,7 +71,7 @@ g = real(g);
 disp(norm(g-F(:))/sqrt(numel(g)))   % rms err
 %figure; plot(f); figure; plot(F); hold on; plot(g);  % debug
 
-tic                               % vs crude feed-in-unit-vecs slower method...
+tic; disp('compared vs crude feed-in-unit-vecs slower method...')
 A2 = nan(size(A));
 for j=1:sum(n)
   v = zeros(sum(n),1); v(j) = 1;
@@ -79,4 +79,5 @@ for j=1:sum(n)
 end
 toc
 %figure; imagesc(imag(A2-A)); colorbar  % debug
+disp('errors vs the slower method:')
 max(abs(real(A2(:)-A(:)))), max(abs(imag(A2(:)-A(:)))), max(abs(A2*f(:)-g))
