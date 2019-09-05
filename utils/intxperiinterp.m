@@ -12,8 +12,8 @@ function g = intxperiinterp(f,N,Y,n,y)
 %  where the f values are ordered fast along each row, where the ith row
 %  is a 0-indexed periodic grid for [0,2pi) with n(i) points, and the vertical
 %  coordinate of all nodes in the ith row is -1 <= y(i) <= 1.
-%  The output is a list of values g interpolated to a grid of similar form
-%  given by lists N and Y.
+%  The output is a row vec of values g interpolated to a grid of similar form
+%  given by lists N and Y. It will only be efficient if
 %
 %  Note on phasing: output & input peri grid first entries align (ie, as if they
 %  are both 0-indexed; note this matches setupquad), in x dimension.
@@ -26,6 +26,7 @@ function g = intxperiinterp(f,N,Y,n,y)
 if nargin==0, test_intxperiinterp; return; end
 if sum(mod(n,2)~=0)>0, error('all n must be even!'); end
 if sum(mod(N,2)~=0)>0, error('all N must be even!'); end
+f = f(:).';           % make row vec
 
 % STEP 1: use 1d FFTs to fill 2d DFT coeffs array of sufficient x-extent
 M = max(N);           % biggest output 1d-grid (ring) size
@@ -53,7 +54,9 @@ g = nan(1,sum(N));     % output list
 off = 0;
 for i=1:NY
   k = N(i)/2;          % half-size for output grid (size 2k ifft)
-  g(off+(1:N(i))) = ifft([ghat(1:k,i); ghat(end-k+1:end,i)]) * N(i);  % wei N(i)
+  % col vec of F coeffs len N(i), symmetrizes so preserves reality...
+  co = [ghat(1:k,i); (ghat(k+1,i)+ghat(end-k+1,i))/2; ghat(end-k+2:end,i)];
+  g(off+(1:N(i))) = ifft(co) * N(i);     % weight N(i)
   off = off + N(i);
 end
 

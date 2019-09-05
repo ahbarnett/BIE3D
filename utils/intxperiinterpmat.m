@@ -11,6 +11,8 @@ function A = intxperiinterpmat(N,Y,n,y)
 %  See description of that latter function.
 %
 % See also: intxperiinterp
+%
+% Note: dominant cost is the GEMMs below, ie blk B = LxI * F;  A = F * B;
 
 % Alex Barnett 9/5/19
 if nargin==0, test_intxperiinterpmat; return; end
@@ -60,11 +62,21 @@ N = NY*(2-Y); N = ceil(N/2)*2;   % a new variation in # in each row
 fun = @(x,y) exp(sin(x).*y);     % 2pi-periodic in x, non-periodic in y
 f = intxperieval(fun,n,y);       % input data vector
 F = intxperieval(fun,N,Y);       % exact ans on final nodes
-tic
+tic %profile clear; profile on
 A = intxperiinterpmat(N,Y,n,y);  % do it
-toc
-g = A*f(:);
+toc %profile off; profile viewer
+g = A*f(:);                      % use it
 fprintf('A size %d-by-%d, max abs Im g=%d\n',size(A,1),size(A,2),max(abs(imag(g))))
 g = real(g);
 disp(norm(g-F(:))/sqrt(numel(g)))   % rms err
 %figure; plot(f); figure; plot(F); hold on; plot(g);  % debug
+
+tic                               % vs crude feed-in-unit-vecs slower method...
+A2 = nan(size(A));
+for j=1:sum(n)
+  v = zeros(sum(n),1); v(j) = 1;
+  A2(:,j) = intxperiinterp(v,N,Y,n,y);  % checks consistency against this code
+end
+toc
+%figure; imagesc(imag(A2-A)); colorbar  % debug
+max(abs(real(A2(:)-A(:)))), max(abs(imag(A2(:)-A(:)))), max(abs(A2*f(:)-g))
