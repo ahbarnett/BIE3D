@@ -22,7 +22,7 @@ function g = intxperiinterp(f,N,Y,n,y)
 %
 % See also: BIE3D/utils/peri2dspecinterp, intxperieval, intxperiinterpmat
 
-% Alex Barnett 9/4/19
+% Alex Barnett 9/4/19, symmetrized for reality 9/5/19
 if nargin==0, test_intxperiinterp; return; end
 if sum(mod(n,2)~=0)>0, error('all n must be even!'); end
 if sum(mod(N,2)~=0)>0, error('all N must be even!'); end
@@ -33,10 +33,11 @@ ny = numel(y);
 fhat = zeros(M,ny);   % 2d DFT coeffs. fast direc is x, so make col
 off = 0;
 for i=1:ny
-  fihat = fft(f(off+(1:n(i)))) / n(i);    % note quadr weight 1/n(i) for Euler-F
+  fihat = fft(f(off+(1:n(i)))) / n(i);  % row, note quadr wei 1/n(i) for Euler-F
   if M>n(i)           % upsample
-    fhat(:,i) = [fihat(1:n(i)/2); fihat(n(i)/2+1)/2; zeros(M-n(i)-1,1); fihat(n(i)/2+1)/2; fihat(n(i)/2+2:end)];
-  else                % downsample or stay same
+    fhat(:,i) = [fihat(1:n(i)/2), fihat(n(i)/2+1)/2, zeros(1,M-n(i)-1), fihat(n(i)/2+1)/2, fihat(n(i)/2+2:end)];
+  else                % downsample or stay same (average makes symm, real->real)
+    fhat(:,i) = [fihat(1:M/2), (fihat(M/2+1)+fihat(end-M/2+1))/2, fihat(end-M/2+2:end)];
   end
   off = off + n(i);
 end
@@ -64,9 +65,11 @@ n = ny*(2+y); n = ceil(n/2)*2;   % varying # in each row, make even
 NY = 30;                         % final 1d grid
 Y = gauss(NY);
 N = NY*(2-Y); N = ceil(N/2)*2;   % a new variation in # in each row
-fun = @(x,y) exp(sin(x).*y);     % 2pi-periodic in x, non-periodic in y
+fun = @(x,y) exp(sin(x).*y);     % 2pi-periodic in x, non-periodic in y, real
 f = intxperieval(fun,n,y);       % input data vector
 F = intxperieval(fun,N,Y);       % exact ans on final nodes
 g = intxperiinterp(f,N,Y,n,y);   % do it
+fprintf('max abs Im g=%d\n',max(abs(imag(g))))
+g = real(g);
 disp(norm(g-F)/sqrt(numel(g)))   % rms err
-%figure; plot(f); figure; plot(F); hold on; plot(real(g));  % debug
+%figure; plot(f); figure; plot(F); hold on; plot(g);  % debug

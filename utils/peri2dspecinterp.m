@@ -11,7 +11,7 @@ function g = peri2dspecinterp(f,N)
 %
 % See also: BIE2D/utils/perispecinterp
 
-% Barnett 8/22/19 based on above
+% Barnett 8/22/19 based on above. symmetrize to preserve reality 9/5/19.
 if nargin==0, test_peri2dspecinterp; return; end
 
 n = size(f);                  % with luck a 2D array
@@ -44,6 +44,7 @@ f = @(x,y) exp(sin(x+2*y));   % doubly-periodic func
 Ns = {[98 100],[32 70],[32 144],[102 144],[60 130],[60 72]};
 for i=1:numel(Ns), N=Ns{i};
   g = peri2dspecinterp(f(xx,yy),N);
+  fprintf('isreal(g)=%d\n',isreal(g))
   [xe ye] = ndgrid(2*pi*(0:N(1)-1)/N(1),2*pi*(0:N(2)-1)/N(2));
   ge = f(xe,ye);
   disp(norm(g(:) - ge(:)))
