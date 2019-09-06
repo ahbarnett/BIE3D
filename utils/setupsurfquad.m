@@ -1,4 +1,4 @@
-function s = setupsurfquad(s,N)
+function s = setupsurfquad(s,N,o)
 % SETUPSURFQUAD  Set up quadrature nodes on given analytic surf of general type.
 %
 % s = setupsurfquad(s,N) where N = [Nu Nv], adds spectral surface quadrature
@@ -11,14 +11,17 @@ function s = setupsurfquad(s,N)
 %                  controls overall scaling of numbers on each ring, with
 %                  N ~ (2/pi)*Nu*Nv. Note (u,v) is in [0,2pi)x[-1,1].
 %
+% s = setupsurfquad(s,N,o) also passes opts struct o to sphere quad.
+%
 %  Note: is a wrapper to setupdoubleptr or setupspherequad appropriately.
 %
 %  For definitions of surface quadrature fields, and (u,v) coords of nodes,
 %  see: setupdoubleptr, setupspherequad
 
 % Barnett 9/5/19
+if nargin<3, o = []; end
 if s.topo=='t'      % torus type
   s = setupdoubleptr(s,N);
 elseif s.topo=='s'  % sphere type
-  s = setupspherequad(s,N);
+  s = setupspherequad(s,N,o);
 end

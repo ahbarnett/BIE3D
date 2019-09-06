@@ -53,7 +53,7 @@ if isfield(o,'alpha')    % add surface
       Y(end,:) = Y(1,:);
       Z(end,:) = Z(1,:);
     else
-      warning('dont know how to show non-tensor-prod sphere-like as surf!');
+      %disp('(dont know how to show non-tensor-prod sphere-like as surf)')
       return
     end
   end

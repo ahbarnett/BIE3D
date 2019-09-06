@@ -26,7 +26,7 @@ function s = setupdoubleptr(s,Ns)
 % Barnett 8/21/19
 if nargin==0, test_setupdoubleptr; return; end
 if nargin<2, Ns = [60,30]; end
-Nu=ceil(Ns(1)/2)*2; Nv=ceil(Ns(2)/2)*2;    % make even
+Nu=round(Ns(1)/2)*2; Nv=round(Ns(2)/2)*2;    % make even
 s.Nu=Nu; s.Nv=Nv; s.N = Nu*Nv;
 s.u = (0:Nu-1)'/Nu*2*pi; s.v = (0:Nv-1)'/Nv*2*pi;  % u,v grids, 0-offset
 [uu vv] = ndgrid(s.u, s.v);

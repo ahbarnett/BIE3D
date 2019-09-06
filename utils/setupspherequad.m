@@ -48,19 +48,19 @@ if ~isfield(o,'tensor'), o.tensor=0; end    % default
 if ~isfield(o,'extraunodes'), o.extraunodes=0; end  % how many above sin(th) val
 if ~isfield(o,'minunodes'), o.minunodes=8; end     % handles small rings
 
-Nv=ceil(Ns(2)/2)*2;    % make even
+Nv=round(Ns(2)/2)*2;    % make even
 [s.v s.vw] = gauss(Nv);  % u,v grids (0-offset in u)
 if o.tensor
-  Nu=ceil(Ns(1)/2)*2;    % make even
+  Nu=round(Ns(1)/2)*2;    % make even
   N = Nu*Nv;
   s.u = (0:Nu-1)'/Nu*2*pi;      % 0-indexed
   [uu vv] = ndgrid(s.u, s.v);   % tensor prod
   uu = uu(:)'; vv = vv(:)';     % since s.Z, cross, etc, row-vectorize only
 else
   sintheta = sqrt(1-s.v(:).^2); % for the round sphere only
-  Nu = ceil(o.extraunodes + Ns(1)*sintheta);    % list, scale ~ sin(theta)
+  Nu = round(o.extraunodes + Ns(1)*sintheta);    % list, scale ~ sin(theta)
   Nu = sqrt(o.minunodes^2 + Nu.^2);     % soft version of max(o.minunodes,Nu)
-  Nu = ceil(Nu/2)*2;     % make all even
+  Nu = round(Nu/2)*2;     % make all even
   N = sum(Nu);
   uu = nan(1,N); vv=uu;  % alloc output arrays
   offset = 0;
@@ -115,7 +115,7 @@ for shape = 0:1
     disp('Gauss'' law flux convergence...')
     zo = [0.3; -0.2; 0.5];    % src pt, must be inside the shape
     hold on; plot3(zo(1),zo(2),zo(3),'k.','markersize',20);
-    for Nu = 20:20:80, Nv = ceil(0.5*Nu);       % tie minor discr to major azim
+    for Nu = 20:20:80, Nv = round(0.5*Nu);       % tie minor discr to major azim
       s = setupspherequad(s,[Nu,Nv],o);
       d = bsxfun(@minus,s.x,zo); r = sqrt(sum(d.^2,1));
       ddotn = sum(d.*s.nx,1);
