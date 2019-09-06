@@ -13,8 +13,9 @@ function s = setupdoubleptr(s,Ns)
 %  s.xu, s.xv - (3*N) tangential vectors dx/du, dx/dv, for x(u,v) in R3.
 %  s.sp - (1*N) "speeds", ie det(Jacobean) from (u,v) -> dS.  sp = cross(xu,xv)
 %  s.w - (1*N) weights (including speed)
-%  s.u, s.v - u and v param grids
+%  s.u, s.v - u and v param grids in [0,2pi)
 %  s.N, S.Nu, s.Nv - numbers of nodes, N = Nu*Nv.
+%  s.hmin, s.hmax - (1*N) local max, min node spacings
 % The node ordering is fast along the u direction, slow along v.
 %
 %  If the partials are not present, nodes s.x only are added, for now
@@ -37,7 +38,11 @@ if isfield(s,'Zu')          % allows a nodes-only surface to be formed
   s.nx = cross(s.xu, s.xv);       % outward normal
   s.sp = sqrt(sum(s.nx.^2,1));    % "speeds"
   s.nx = bsxfun(@times,s.nx,1./s.sp);   % unit normal
-  s.w = (2*pi/Nu)*(2*pi/Nv) * s.sp;   % quad weights incl speed
+  s.w = (2*pi/Nu)*(2*pi/Nv) * s.sp;     % quad weights incl speed
+  hu = sqrt(sum(s.xu.^2,1))*(2*pi/Nu);  % local node spacing in u-direc (h_1)
+  hv = sqrt(sum(s.xv.^2,1))*(2*pi/Nv);  % local node spacing in v-direc (h_2)
+  s.hmax = max([hu;hv]);          % elementwise, ok when not skew
+  s.hmin = min([hu;hv]);          % "
 end
   
 %%%%%%%%
@@ -45,3 +50,5 @@ function test_setupdoubleptr
 a=1.0; b= 0.5; s = modulatedtorus(a,b);
 s = setupdoubleptr(s);
 o=[]; o.alpha = 0.2; figure; showsurf(s,'b',o); lightangle(45,0);
+set(gcf,'name','torus surface double-PTR');
+

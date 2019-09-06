@@ -12,9 +12,10 @@ function [h h2] = showsurf(s,c,o)
 %  can read s.topo giving the topology (torus, sphere,...)
 % [h h2] = showsurf(...) returns h2 surf handle.
 %
-% See for test: self-test for setupdoubleptr
+% For test: run without arguments.
 
 % Barnett 8/21/19, 9/3/19 for sphere topo.
+if nargin<1, test_showsurf; return; end
 if nargin<2, c = 'k'; end
 if nargin<3, o=[]; end
 if ~isfield(o,'normals'),o.normals=1; end  
@@ -62,3 +63,8 @@ if isfield(o,'alpha')    % add surface
   h2 = surf(X,Y,Z,C,'FaceAlpha',o.alpha,'edgecolor','none');
   set(h2,'ambientstrength',0.7,'facelighting','gouraud');
 end  
+
+%%%%%%
+function test_showsurf   % exploit other's self-tests
+setupdoubleptr
+setupspherequad

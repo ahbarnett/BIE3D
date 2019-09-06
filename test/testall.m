@@ -7,9 +7,12 @@ checkgrad
 interpmat_1d
 tensorprod_interp
 peri2dspecinterp
+intxperiinterp
+intxperiinterpmat
+showsurf
 showsurffunc
 setupdoubleptr
-setupspherquad
+setupspherequad
 
 % surfaces
 setup_torus_doubleptr

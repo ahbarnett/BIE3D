@@ -1,17 +1,24 @@
 function s = setupspherequad(s,Ns,o)
 % SETUPSPHEREQUAD.  Add PTRxGL node info to an analytic 3D sphere-like surface
 %
-% s = setupspherequad(s,Ns) where Ns = [Nu Nv] adds a Nu*Nv quadrature, periodic
-%  trapezoid rule on each ring in u, for each node of a Gauss-Legendre rule in
-%  v. The surface must be of type topo='s'. It is defined by functions
-%  s.Z(u,v) - the defining global map from u,v in [0,2pi)x[-1,1] to R3,
-%  s.Zu(u,v) and s.Zv(u,v) - its partials.
-%  Nu and Nv are rounded up to even numbers. If Ns absent or empty, default used.
+% s = setupspherequad(s,Ns) where Ns = [Nu Nv] adds a spectral quadrature,
+%  periodic trapezoid rule on each ring in u, for each node of a Gauss-Legendre
+%  rule in v. The surface must be of type topo='s'. It is defined by functions:
+%    s.Z(u,v) - the defining global map from u,v in [0,2pi)x[-1,1] to R3,
+%    s.Zu(u,v) and s.Zv(u,v) - its partials.
+%  s.Nu becomes the list of numbers of nodes on each ring (even integers), which
+%    are bounded by roughly the requested Nu.
+%  s.Nv stays as Nv.
+%  If Ns absent or empty, default used.
+%
+% Note: for unit-aspect (sphere), Nu=2*Nv gives quasi-uniform nodes (h_1~h_2
+%  everywhere, apart from rings near poles).
 %
 % s = setupspherequad(s,Ns,o) also controls opts:
-%   o.tensor = 1 (tensor prodcut quadrature, uses pi/2 factor more nodes than
+%   o.tensor = 1 (tensor product quadrature, uses pi/2 factor more nodes than
 %                 necessary, but simpler), 0 (Nu scaled with elevation, as for a
 %                 sphere; more bookkeeping but quasi-optimal).
+%            Note: 0 is recommended, and 1 is somewhat obsolete.
 %   o.extraunodes, o.minunodes - settings affecting small rings for o.tensor=0.
 %
 % Output struct s has new node-info fields including:
@@ -20,20 +27,24 @@ function s = setupspherequad(s,Ns,o)
 %  s.xu, s.xv - (3*N) tangential vectors dx/du, dx/dv, for x(u,v) in R3.
 %  s.sp - (1*N) "speeds", ie det(Jacobean) from (u,v) -> dS.  sp = cross(xu,xv)
 %  s.w - (1*N) weights (including speed)
-%  s.v - v param 1d grid, with G-L weights s.vw.
-%  s.N - total number of nodes, N = Nu*Nv (tensor-prod case only).
+%  s.N - total number of nodes, typically ~ (2/pi)*Nu*Nv, or Nu*Nv (tensor=1)
 %  s.Nv - number of v nodes.
-%  s.Nu - number of u nodes (tensor case), or array of numbers of u-nodes each v.
+%  s.Nu - array of numbers of u-nodes at each v (tensor=0), or number u nodes.
+%  s.v - v param 1d grid
+%  s.vw - corresp G-L weights for the nodes s.v for quad on [-1,1].
+%  s.hmin, s.hmax - (1*N) local max, min node spacings
 %
 % The node ordering is fast along the incr u direction, slow along incr v.
 %
 % Is the sphere analog of: setupdoubleptr
 
+% to do: add spectral diff to get s.xu, etc, from only s.x and s.Nu ?
+
 % Barnett 9/3/19
 if nargin==0, test_setupspherequad; return; end
 if nargin<2 || isempty(Ns), Ns = [60,30]; end
 if nargin<3, o=[]; end
-if ~isfield(o,'tensor'), o.tensor=1; end    % default
+if ~isfield(o,'tensor'), o.tensor=0; end    % default
 if ~isfield(o,'extraunodes'), o.extraunodes=0; end  % how many above sin(th) val
 if ~isfield(o,'minunodes'), o.minunodes=8; end     % handles small rings
 
@@ -44,9 +55,10 @@ if o.tensor
   N = Nu*Nv;
   s.u = (0:Nu-1)'/Nu*2*pi;      % 0-indexed
   [uu vv] = ndgrid(s.u, s.v);   % tensor prod
-  uu = uu(:)'; vv = vv(:)';   % since s.Z, cross, etc, only vectorize along rows 
+  uu = uu(:)'; vv = vv(:)';     % since s.Z, cross, etc, row-vectorize only
 else
-  Nu = ceil(o.extraunodes + Ns(1)*sqrt(1-s.v(:).^2));  % list, scale ~ sin(theta)
+  sintheta = sqrt(1-s.v(:).^2); % for the round sphere only
+  Nu = ceil(o.extraunodes + Ns(1)*sintheta);    % list, scale ~ sin(theta)
   Nu = sqrt(o.minunodes^2 + Nu.^2);     % soft version of max(o.minunodes,Nu)
   Nu = ceil(Nu/2)*2;     % make all even
   N = sum(Nu);
@@ -59,7 +71,7 @@ else
     offset = offset+Nu(i);
   end
 end
-s.x = s.Z(uu,vv);          % eval all nodes
+s.x = s.Z(uu,vv);           % eval all nodes
 s.N = N; s.Nv=Nv; s.Nu=Nu;  % write crap out
 if isfield(s,'Zu')          % (false allows a nodes-only surface to be formed)
   s.xu = s.Zu(uu,vv);
@@ -70,16 +82,22 @@ if isfield(s,'Zu')          % (false allows a nodes-only surface to be formed)
   if o.tensor
     s.w = (2*pi/Nu)*bsxfun(@times,s.vw, reshape(s.sp,[Nu Nv]));   % quad weights incl "speed"
     s.w = s.w(:)';                  % make row
+    hu = sqrt(sum(s.xu.^2,1))*(2*pi/Nu);  % local node sep in u-direc (h_1)
+    hv = sqrt(sum(s.xv.^2,1))*(2*pi/Nv);  % local node sep in v-direc (h_2)
   else
-    s.w = nan(1,N);        % build weights separately for each ring
+    [s.w,hu,hv] = deal(nan(1,N));  % build weights, etc, for each ring in turn
     offset = 0;
     for i=1:Nv
       Ni = Nu(i);          % this Nu
       ii = offset+(1:Ni);  % inds 
       s.w(ii) = (2*pi/Ni) * s.vw(i) * s.sp(ii);
+      hu(ii) = sqrt(sum(s.xu(:,ii).^2,1)) * (2*pi/Ni);  % local h_1
+      hv(ii) = sqrt(sum(s.xv(:,ii).^2,1)) * s.vw(i);    % local h_2
       offset = offset+Nu(i);
     end    
   end
+  s.hmax = max([hu;hv]);        % elementwise, ok when not skew
+  s.hmin = min([hu;hv]);        % "
 end
 
 %%%%%%%%%
@@ -106,4 +124,4 @@ for shape = 0:1
     end
   end
 end
-set(gcf,'name','sphere & ellipsoid, quasi-uniform and tensor-prod quads');
+set(gcf,'name','sphere & ellipsoid: quasi-uniform vs tensor-prod quads');
