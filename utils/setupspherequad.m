@@ -7,8 +7,8 @@ function s = setupspherequad(s,Ns,o)
 %    s.Z(u,v) - the defining global map from u,v in [0,2pi)x[-1,1] to R3,
 %    s.Zu(u,v) and s.Zv(u,v) - its partials.
 %  s.Nu becomes the list of numbers of nodes on each ring (even integers), which
-%    are bounded by roughly the requested Nu.
-%  s.Nv stays as Nv.
+%    are bounded by roughly the requested Nu, and are even integers.
+%  s.Nv is Nv rounded up to an even integer.
 %  If Ns absent or empty, default used.
 %
 % Note: for unit-aspect (sphere), Nu=2*Nv gives quasi-uniform nodes (h_1~h_2
@@ -22,17 +22,18 @@ function s = setupspherequad(s,Ns,o)
 %   o.extraunodes, o.minunodes - settings affecting small rings for o.tensor=0.
 %
 % Output struct s has new node-info fields including:
-%  s.x - (3*N) node locs in R3
-%  s.nx - (3*N) unit outward normals
+%  s.x - (3*N) node locs in R3.
+%  s.nx - (3*N) unit outward normals.
 %  s.xu, s.xv - (3*N) tangential vectors dx/du, dx/dv, for x(u,v) in R3.
-%  s.sp - (1*N) "speeds", ie det(Jacobean) from (u,v) -> dS.  sp = cross(xu,xv)
-%  s.w - (1*N) weights (including speed)
-%  s.N - total number of nodes, typically ~ (2/pi)*Nu*Nv, or Nu*Nv (tensor=1)
+%  s.sp - (1*N) "speeds", ie det(Jacobean) from (u,v) -> dS.  sp = cross(xu,xv).
+%  s.w - (1*N) weights (including speed).
+%  s.N - total number of nodes, typically ~ (2/pi)*Nu*Nv (tensor=0 case),
+%        or Nu*Nv (tensor=1).
 %  s.Nv - number of v nodes.
 %  s.Nu - array of numbers of u-nodes at each v (tensor=0), or number u nodes.
-%  s.v - v param 1d grid
-%  s.vw - corresp G-L weights for the nodes s.v for quad on [-1,1].
-%  s.hmin, s.hmax - (1*N) local max, min node spacings
+%  s.v - 1d grid of v nodes.
+%  s.vw - corresp G-L weights for the nodes s.v for smooth quadr on [-1,1].
+%  s.hmin, s.hmax - (1*N) local max, min node spacings.
 %
 % The node ordering is fast along the incr u direction, slow along incr v.
 %
