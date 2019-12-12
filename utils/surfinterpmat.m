@@ -10,7 +10,7 @@ function I = surfinterpmat(sf,si)
 %
 %  Note: is a wrapper to appropriate interpmat routines.
 
-% Barnett 9/5/19
+% Barnett 9/5/19. Fixed to m-odd sphere interp variant, 12/11/19
 if iscell(si) || iscell(sf), error('si & sf cannot be patch array surfaces!'); end
 if sf.topo~=si.topo, error('si and sf must be of same topology!'); end
 if si.topo=='t'      % torus type
@@ -19,5 +19,5 @@ elseif si.topo=='s'  % sphere type
   if numel(si.Nu)==1 || numel(sf.Nu)==1
     error('tensor-prod spheres not implemented');
   end
-  I = intxperiinterpmat(sf.Nu,sf.v,si.Nu,si.v);   % Nu both are vectors here
+  I = intxperiinterpmat(sf.Nu,sf.v,si.Nu,si.v,1);   % Nu both are vectors here
 end
