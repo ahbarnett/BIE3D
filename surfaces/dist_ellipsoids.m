@@ -10,7 +10,7 @@ function [d x y its] = dist_ellipsoids(E1,R1,t1,E2,R2,t2, abstol)
 % [d x y its] = dist_ellipsoids(E1,R1,t1,E2,R2,t2, abstol)
 % also controls estim absolute tolerance for dist
 % (crappy, need to set to tol^2 !)
-% and reports # iters.
+% and reports # iters (which is high when close)
 
 % Called without arguments it does a self-test (see code for example usage).
 
@@ -18,18 +18,16 @@ function [d x y its] = dist_ellipsoids(E1,R1,t1,E2,R2,t2, abstol)
 if nargin==0, test_dist_ellipsoids; return, end
 if nargin<7, abstol = 1e-6; end
 
-t = t2(:)-t1(:);   % col vec
-R = inv(R1)*R2;
-iR = inv(R);
-% now E1 is oriented vertically at origin, E2 is at t with rot mat R.
-
-x = t;    % center of E2
+iR1 = inv(R1);
+iR2 = inv(R2);
+x = t2;    % start guess center of E2
 dold = inf;
 maxit = 1e4;          % takes ages since slow decay when close!
 for k=1:maxit
-  [d y] = dist_ellipsoid(x,E1);
-  [d x] = dist_ellipsoid(iR*(y-t),E2);   % solve rel to coords at E2
-  x = t+R*x;            % convert back to E1 coord sys
+  [d y] = dist_ellipsoid(iR1*(x-t1),E1);   % solve rel to coords of E1
+  y = t1+R1*y;            % convert back to base coord sys
+  [d x] = dist_ellipsoid(iR2*(y-t2),E2);   % solve rel to coords of E2
+  x = t2+R2*x;            % convert back to base coord sys
   if abs(d-dold)<abstol, break, end
   dold = d;
 %  k,x,d
@@ -50,11 +48,18 @@ rng(0);
 R2 = Rz(2*pi*rand) * Ry(pi*rand) * Rz(2*pi*rand);    % Euler angles
 t2 = [2;2;-1];              % translate
 
-tic; [d0 x0 y0 its] = dist_ellipsoids(E1,R1,t1,E2,R2,t2, 1e-10);  % "exact"
+tol = 1e-5;
+tic; [d0 x0 y0 its] = dist_ellipsoids(E1,R1,t1,E2,R2,t2, tol^2);  % "exact"
 d0, its, toc
-%norm(x0-y0)
+norm(x0-y0)-d0
+% flip the ellipsoids, must match...
+tic; [d1 x1 y1 its] = dist_ellipsoids(E2,R2,t2,E1,R1,t1, tol^2);
+d1, its, toc
+norm(x1-y0), norm(y1-x0)  % points found match?
 
-res = [100 50];     % compare against crappier discr method...
+
+disp('now compare against crappier discr method...')
+res = [100 50];
 b = ellipsoid(E1(1),E1(2),E1(3)); b=setupsurfquad(b,res);
 b1.x = R1*b.x + t1;
 b = ellipsoid(E2(1),E2(2),E2(3)); b=setupsurfquad(b,res);
