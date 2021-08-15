@@ -61,6 +61,7 @@ for j=1:NY                    % loop over output rings, converting F coef to val
   A(off+(1:N(j)),:) = F * B(M*(j-1)+(1:M),:);  % also dominant cost
   off = off + N(j);
 end
+A = real(A);                     % (the imag parts should be at emach level)
 
 
 %%%%%%
