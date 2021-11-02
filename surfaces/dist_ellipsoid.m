@@ -4,7 +4,8 @@ function [dist,z,lambda] = dist_ellipsoid(y,semiaxes)
 % [dist,z,lambda] = dist_ellipsoid(x,semiaxes) where semiaxes=[a b c], and
 %  x is point in R3,
 % returns dist, point achieving it z, and lagrange multiplier lambda
-% (lambda<0 if was inside)
+% (lambda<0 and dist=0 if was inside).
+% Ie, it's distance to the solid, not the shell.
 %
 % Without arguments does self-test.
 
@@ -16,9 +17,11 @@ y = y(:);
 vec = 1./semiaxes.^2;
 vec = vec(:);
 
+if sum(vec.*y.^2)<=1, lambda=-inf; dist=0; z=y; return; end    % inside
+
 epst = 1e-12;
 x0=0;
-x1=0.1;  % why?
+x1=0.1;  % why?  terribly nonconvergent inside anyway, so cut that task.
 while abs(x1-x0)>epst
 x0 = x1;
 x1 = x0-fun(x0,y,vec)/der(x0,y,vec);    % Newton
