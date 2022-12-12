@@ -1,8 +1,9 @@
 # BIE3D: MATLAB tools for boundary integral equations on surfaces in 3D
 
-This is a preliminary set of high-order accurate global double periodic trapezoid rule and quad-panel based surface quadratures for kernels that have on-surface weak singularities no more singular than 1/r. It currently contains only a torus and its modulation via a general smooth radius function, with on-surface quadratures only for uniform arbitrary-order quad patches, with the Laplace (an elliptic BVP) and wave-equation (hyperbolic BVP) kernels.
+This contains some research codes for high-order accurate 3D Nystrom BIE for scalar elliptic PDEs with constant coefficients inside or outside of a surface.
+In more detail, it has: global double periodic trapezoid rule and quad-panel based surface quadratures for kernels that have on-surface weak singularities no more singular than 1/r. For the torus and its modulation via a general smooth radius function it has on-surface quadratures only for uniform arbitrary-order quad patches, for the Laplace (an elliptic BVP) and wave-equation (hyperbolic BVP) kernels. For smooth deformations of the sphere, it has global QFS quadratures for the Laplace kernel, built on global spectral interpolations. It also hosts an old self-contained doubly-periodic Laplace dipole summation code.
 
-Main author:  Alex Barnett
+Author:  Alex Barnett
 
 Contributions: Tom Hagstrom - f90 modules for interpolation from time grid.
 
@@ -21,7 +22,7 @@ For `timedomainwaveeqn`:
 
 ### Installation
 
-Download using `git`, `svn`, or as a zip (see green button above).
+Download using `git` or as a zip (see green button above).
 
 Open MATLAB in the top level (`BIE3D`) directory, and run `bie3dsetup` to add all needed directories to your path. 
 
