@@ -17,7 +17,8 @@ MATLAB. Codes have not been tested on MATLAB versions prior to R2012a.
 
 For `timedomainwaveeqn`:
 
-* Fortran compiler to build Hagstrom time interpolation and MEX interface.  
+* Fortran compiler to build Hagstrom time interpolation and MEX interface.
+* Some driver scripts need you to have the MATLAB/Octave tool [memorygraph](https://github.com/ahbarnett/memorygraph)  
 * Optionally: `fsparse` from [stenglib](https://github.com/stefanengblom/stenglib), compiled with `make('openmp',true)`, for fast multithreaded sparse matrix assembly.  
 
 ### Installation
