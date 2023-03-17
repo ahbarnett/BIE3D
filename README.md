@@ -7,7 +7,7 @@ Author:  Alex Barnett
 
 Contributions: Tom Hagstrom - f90 modules for interpolation from time grid.
 
-Version: 20190821
+Version: 20230317 (tested on MATLAB R2022a)
 
 ![cruller with panel quadrature and on-surface singular scheme](pics/cruller_panelquad.png)
 
@@ -27,7 +27,7 @@ Download using `git` or as a zip (see green button above).
 
 Open MATLAB in the top level (`BIE3D`) directory, and run `bie3dsetup` to add all needed directories to your path. 
 
-Test by running `testall` which currently tests Laplace quadratures on a torus, and should produce lots of error outputs close to machine precision, convergent sequences of numbers, and some plots, and yet not crash.
+Test by running `testall` which currently tests Laplace quadratures on a torus, and should produce lots of error outputs close to machine precision, convergent sequences of numbers, and some plots, taking around 30-60 secs total.
 
 ### Directories
 
