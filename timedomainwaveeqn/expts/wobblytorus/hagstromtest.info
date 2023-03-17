@@ -1,0 +1,40 @@
+Hi Tom,
+
+Glad you found memorygraph  - it's very useful for any of your matlab/octave expts.
+But if you crtl-C the process it tends to leave various "top" processes writing to .tmp files.
+So in the version I just pushed I removed memorygraph commands (easy to see where).
+
+Sorry, the script you ran was a RAM hog, since it fills a sparse mat Rtarg for the timestep, but also Rtest for the retarded pot eval on a dense slice in R3. (the latter matrix alone was 2GB at nps=9).
+for nps = 9  (9x6 panels) it used 15 GB, taking 46 s to complete (8 core laptop, parallel toolbox for the "targ pan"s)
+for nps=12  (12x8 panels) it was 25 GB.
+You can check the peak RAM usage after running via: max(bytes)/1e9  or run{i}.maxbytes/1e9
+
+But use this instead: I just pushed
+
+BIE3D/timedomainwaveeqn/expts/wobblytorus/gen_scattBVPconv_wider_hagstromtest.m
+
+which uses a dx=0.2 coarser grid on the slice, hence much less RAM.
+Once parpool started (ridiculous 30 sec)
+it does nps = 6:3:12, and these runs take 6s then 16s then 50s respectively.
+
+It now interpolates to t0 during each run so you can eyeball convergence.
+It also now interpolates utot(x0,t) to a regular t-grid (tes) at the end, and produces an error plot.
+This is for x0 being the j'th point in the slice.
+This code should show you how to output to any spacetime points you want: set up those points in the t.x target grid so that the Rtest matrix is filled for them to take the density to these targets on the tj timestep grid. Then interpolate them to the t's you want after the sim is done.
+
+This shows max u err 0.006 between np=9 vs np=12 runs:
+￼
+
+At 6th-order you'd then expect np=12 to have max err ~ 1e-3.
+
+It uses only about 10 GB now. Here's the memorygraph (which I removed from the script anway):
+
+￼
+
+
+So, this gives a good place to sit: max error of 1e-3 taking about 1 min on laptop, 10GB.
+You should go to desktop for np>12 anyway.  PS np being a multiple of 3 is preferred, allows mp to be exactly 2np/3, better for conv study.
+
+PS mat-filling is already parallelized, and t-stepping is a sparse matvec which basically doesn't parallelize on one node because it's DRAM-access dominated.
+
+Sorry about the research code state. The above should really help.  Best,    Alex
