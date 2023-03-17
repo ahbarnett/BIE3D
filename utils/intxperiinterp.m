@@ -98,6 +98,6 @@ for sphere=0:1                   % test both cases
   g = intxperiinterp(f,N,Y,n,y,sphere);   % do it
   fprintf('check reality: max abs Im g=%d\n',max(abs(imag(g))))
   g = real(g);
-  fprintf('interp rms err: %.3g\n', disp(norm(g-F)/sqrt(numel(g))))
+  fprintf('interp rms err: %.3g\n', norm(g-F)/sqrt(numel(g)))
 end
 figure; plot(f); figure; plot(F); hold on; plot(g);  % debug, crude 1d plots
