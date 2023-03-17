@@ -27,8 +27,11 @@ if ~isfield(o,'nofig'), newfig = 1; else newfig = 0; end
 if ~isfield(o,'siz'), o.siz=20; end        % blob size in pixels
 
 f = real(f);
-if ~isfield(o,'sc'), o.sc = max(abs(f)); end % colorscale, then symm or not...
-if sum(f<0)==0, cs = [0 o.sc]; else cs = o.sc*[-1 1]; end
+if ~isfield(o,'sc'), o.sc = max(abs(f)); end   % colorscale, then symm or not...
+if o.sc<=0, cs = [-1 1];
+elseif sum(f<0)==0, cs = [0 o.sc];
+else cs = o.sc*[-1 1];
+end
 
 % set up arrays, including wrapping to close the surface...
 e = 1;   % 1 if extra row & co needed for sealing up (closed surf)
